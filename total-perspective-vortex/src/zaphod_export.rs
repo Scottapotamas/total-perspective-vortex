@@ -72,12 +72,12 @@ pub struct GenericAction {
     pub wait_for: u32,
 }
 
-pub fn transform_points(points: &[f32]) -> (f32, f32, f32) {
-    let scale_factor: f32 = 100.0;
+pub fn transform_points(x: f32, y: f32, z: f32) -> (f32, f32, f32) {
+    let scale_factor: f32 = 60.0;
 
-    let scaled_x = points[0] * scale_factor;
-    let scaled_y = points[1] * scale_factor;
-    let scaled_z = points[2] * scale_factor + 150.0;
+    let scaled_x = x * scale_factor;
+    let scaled_y = y * scale_factor;
+    let scaled_z = z * scale_factor + 130.0;
 
     return (scaled_x as f32, scaled_y as f32, scaled_z as f32);
 }
