@@ -3,6 +3,27 @@ use crate::zaphod_export::*;
 
 // Generate a move between A and B
 fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAction> {
+    if a != b {
+        let transit_points: Vec<(f32, f32, f32)> = vec![a, b]
+            .iter()
+            .map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z))
+            .collect();
+        let transit_duration = calculate_duration(&[a, b], speed);
+
+        return Some(DeltaAction {
+            id: 0,
+            action: String::from("transit"),
+            payload: Motion {
+                id: 0,
+                reference: 0,
+                motion_type: 1,
+                duration: (transit_duration * 1000.0) as u32,
+                points: transit_points,
+            },
+        });
+    } else {
+        return None;
+    }
 }
 
 pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
