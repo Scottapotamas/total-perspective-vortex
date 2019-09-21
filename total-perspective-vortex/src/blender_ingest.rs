@@ -10,15 +10,25 @@ extern crate colorsys;
 use self::image::DynamicImage;
 use colorsys::{Hsl, Rgb};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct BlenderSpline {
     pub curve_length: f32,
-    pub points: Vec<(f32, f32, f32, f32)>,
+    pub points: Vec<BlenderPoint>,
     #[serde(rename = "type")]
     pub spline_type: String,
     #[serde(rename = "uv")]
     pub uv_path: String,
     pub cyclic: bool,
+    #[serde(skip)]
+    pub target_duration: f32,
+}
+
+#[derive(Deserialize, Debug, Copy, Clone, PartialEq)]
+pub struct BlenderPoint {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    pub w: f32,
 }
 
 pub struct IlluminatedSpline {
@@ -43,7 +53,7 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
 
     let input_colors = match load_uv(uv_full_path.as_path()) {
         Ok(contents) => convert_uv(contents),
-        Err(err) => generate_placeholder_uv_data(),
+        Err(_error) => generate_placeholder_uv_data(),
     };
 
     let temp: IlluminatedSpline = IlluminatedSpline {
@@ -52,6 +62,111 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
     };
 
     return temp;
+}
+
+// Convert the blender co-ordinate units to millimeters
+pub fn transform_meters_to_millimeters(points: &mut Vec<BlenderPoint>) {
+    for point in points {
+        point.x *= 100.0;
+        point.y *= 100.0;
+        point.z *= 100.0;
+
+        point.z += 30.0;
+    }
+}
+
+// Calculate the 3D distance in mm between two points
+fn distance_3d(a: &BlenderPoint, b: &BlenderPoint) -> f32 {
+    let dx = a.x - b.x;
+    let dy = a.y - b.y;
+    let dz = a.z - b.z;
+    let distance = ((dx * dx) + (dy * dy) + (dz * dz)).sqrt();
+
+    return distance.abs();
+}
+
+fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> BlenderPoint {
+    if weight <= 0.0 || weight >= 1.0 {
+        // Interpolate the position
+        println!("Invalid weight into catmull point calculator")
+    }
+    let t = weight;
+    let t2 = t * t;
+    let t3 = t2 * t;
+
+    /* Derivation from http://www.mvps.org/directx/articles/catmull/
+
+                                [  0  2  0  0 ]   [ p0 ]
+    q(t) = 0.5( t, t^2, t^3 ) * [ -1  0  1  0 ] * [ p1 ]
+                                [  2 -5  4 -1 ]   [ p2 ]
+                                [ -1  3 -3  1 ]   [ p3 ]
+     */
+
+    let out_x = 0.5
+        * ((2.0 * p[1].x)
+            + (-p[0].x + p[2].x) * t
+            + (2.0 * p[0].x - 5.0 * p[1].x + 4.0 * p[2].x - p[3].x) * t2
+            + (-p[0].x + 3.0 * p[1].x - 3.0 * p[2].x + p[3].x) * t3);
+
+    let out_y = 0.5
+        * ((2.0 * p[1].y)
+            + (-p[0].y + p[2].y) * t
+            + (2.0 * p[0].y - 5.0 * p[1].y + 4.0 * p[2].y - p[3].y) * t2
+            + (-p[0].y + 3.0 * p[1].y - 3.0 * p[2].y + p[3].y) * t3);
+
+    let out_z = 0.5
+        * ((2.0 * p[1].z)
+            + (-p[0].z + p[2].z) * t
+            + (2.0 * p[0].z - 5.0 * p[1].z + 4.0 * p[2].z - p[3].z) * t2
+            + (-p[0].z + 3.0 * p[1].z - 3.0 * p[2].z + p[3].z) * t3);
+
+    return BlenderPoint {
+        x: out_x,
+        y: out_y,
+        z: out_z,
+        w: 0.0,
+    };
+}
+
+// Estimate the 3D length of a catmull-rom spline by sampling repeatedly
+fn distance_catmull(control_points: &[BlenderPoint]) -> f32 {
+    let mut accumulated_length: f32 = 0.0;
+
+    let samples: Vec<u32> = (0..100).collect();
+
+    for test_point in samples.windows(2) {
+        accumulated_length += distance_3d(
+            &interpolate_catmull_point(control_points, (test_point[0] as f32 * 0.01)),
+            &interpolate_catmull_point(control_points, (test_point[1] as f32 * 0.01)),
+        );
+        println!("Length {}", accumulated_length);
+    }
+    println!("FinalLength {}", accumulated_length);
+
+    return accumulated_length;
+}
+
+pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> f32 {
+    let mut distance = 0.0;
+
+    match points.len() {
+        1 => println!("Single point distance?"),
+        2 => {
+            distance = distance_3d(&points[0], &points[1]);
+        }
+        4 => {
+            distance = distance_catmull(points);
+        }
+        _ => println!("Error calculating duration from points..."),
+    }
+
+    let duration = distance / speed;
+    //    println!(
+    //        "Effector will take {} seconds to travel {} mm at {} mm/sec",
+    //        duration, distance, speed
+    //    );
+
+    return duration;
 }
 
 fn load_uv(input_path: &Path) -> Result<DynamicImage, image::ImageError> {

@@ -72,16 +72,6 @@ pub struct GenericAction {
     pub wait_for: u32,
 }
 
-pub fn transform_points(x: f32, y: f32, z: f32) -> (f32, f32, f32) {
-    let scale_factor: f32 = 60.0;
-
-    let scaled_x = x * scale_factor;
-    let scaled_y = y * scale_factor;
-    let scaled_z = z * scale_factor + 130.0;
-
-    return (scaled_x as f32, scaled_y as f32, scaled_z as f32);
-}
-
 pub fn generate_preparation_movement(start_position: (f32, f32, f32)) -> DeltaAction {
     let home_at_position = vec![start_position];
 
@@ -107,7 +97,7 @@ pub fn generate_header(title: String) -> EventMetadata {
     };
 }
 
-pub fn save_toolpath(write_path: &Path, data: DeltaEvents) {
+pub fn export_toolpath(write_path: &Path, data: DeltaEvents) {
     let data_to_write = serde_json::to_string_pretty(&data).expect("Serialisation Failed");
 
     fs::write(write_path, data_to_write).expect("Unable to write file");
