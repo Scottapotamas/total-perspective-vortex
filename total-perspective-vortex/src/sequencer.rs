@@ -114,20 +114,20 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
 
     let mut event_identifier = 0;
 
-    for movement in &mut movement_events {
+    movement_events.iter_mut().for_each(|movement| {
         movement.id = event_identifier;
         event_identifier += 1;
-    }
+    });
 
-    for illumination in &mut lighting_events {
+    lighting_events.iter_mut().for_each(|illumination| {
         illumination.id = event_identifier;
         event_identifier += 1;
-    }
+    });
 
-    for generic in &mut additional_steps {
+    additional_steps.iter_mut().for_each(|generic| {
         generic.id = event_identifier;
         event_identifier += 1;
-    }
+    });
 
     // Prepare the data for export
     let event_set = ActionGroups {
