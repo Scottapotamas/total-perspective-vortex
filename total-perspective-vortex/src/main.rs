@@ -73,6 +73,7 @@ fn process_frame_folder(entry: &DirEntry) {
         }
 
         // Perform any LED manipulation here
+        // TODO consider supporting color inversion?
     }
 
     /*
