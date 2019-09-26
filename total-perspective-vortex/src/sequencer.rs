@@ -8,7 +8,7 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
             .iter()
             .map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z))
             .collect();
-        let transit_duration = calculate_duration(&[a, b], speed);
+        let transit_duration = calculate_duration(&[a, b], speed).unwrap();
 
         return Some(DeltaAction {
             id: 0,
@@ -72,13 +72,13 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
                 transit.payload.id = movement_events.len() as u32;
                 movement_events.push(transit);
             }
-            _ => println!("No transit required"),
+            _ => (),
         }
 
         // Calculate movements to follow the line/spline
         for geometry in input_spline.points.windows(window_size) {
             // Calculate the duration of this move, and accumulate it for the whole spline
-            let move_time = calculate_duration(geometry, 300.0);
+            let move_time = calculate_duration(geometry, 300.0).unwrap();
 
             // Calculate the start and end times of the move in the set,
             let timestamp_begin = input_spline.target_duration;

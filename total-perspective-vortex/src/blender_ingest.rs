@@ -85,11 +85,12 @@ fn distance_3d(a: &BlenderPoint, b: &BlenderPoint) -> f32 {
     return distance.abs();
 }
 
-fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> BlenderPoint {
+fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> Result<BlenderPoint, String> {
     if weight <= 0.0 || weight >= 1.0 {
-        // Interpolate the position
-        println!("Invalid weight into catmull point calculator")
+        // Weights should be between 0.0-1.0 representing the percentage point to interpolate
+        return Err("Can't interpolate catmull with input weight".to_string());
     }
+
     let t = weight;
     let t2 = t * t;
     let t3 = t2 * t;
@@ -120,44 +121,44 @@ fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> BlenderPoint {
             + (2.0 * p[0].z - 5.0 * p[1].z + 4.0 * p[2].z - p[3].z) * t2
             + (-p[0].z + 3.0 * p[1].z - 3.0 * p[2].z + p[3].z) * t3);
 
-    return BlenderPoint {
+    Ok(BlenderPoint {
         x: out_x,
         y: out_y,
         z: out_z,
         w: 0.0,
-    };
+    })
 }
 
 // Estimate the 3D length of a catmull-rom spline by sampling repeatedly
-fn distance_catmull(control_points: &[BlenderPoint]) -> f32 {
+fn distance_catmull(control_points: &[BlenderPoint]) -> Result<f32, String> {
     let mut accumulated_length: f32 = 0.0;
 
     let samples: Vec<u32> = (0..100).collect();
 
     for test_point in samples.windows(2) {
-        accumulated_length += distance_3d(
-            &interpolate_catmull_point(control_points, (test_point[0] as f32 * 0.01)),
-            &interpolate_catmull_point(control_points, (test_point[1] as f32 * 0.01)),
-        );
+        let a = interpolate_catmull_point(control_points, test_point[0] as f32 * 0.01)?;
+        let b = interpolate_catmull_point(control_points, test_point[1] as f32 * 0.01)?;
+
+        accumulated_length += distance_3d(&a, &b);
         println!("Length {}", accumulated_length);
     }
     println!("FinalLength {}", accumulated_length);
 
-    return accumulated_length;
+    Ok(accumulated_length)
 }
 
-pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> f32 {
+pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> Result<f32, String> {
     let mut distance = 0.0;
 
     match points.len() {
-        1 => println!("Single point distance?"),
+        1 => return Err("Duration for one point?".to_string()),
         2 => {
             distance = distance_3d(&points[0], &points[1]);
         }
         4 => {
-            distance = distance_catmull(points);
+            distance = distance_catmull(points)?;
         }
-        _ => println!("Error calculating duration from points..."),
+        _ => return Err("Can't calculate duration on this number of points".to_string()),
     }
 
     let duration = distance / speed;
@@ -166,7 +167,7 @@ pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> f32 {
     //        duration, distance, speed
     //    );
 
-    return duration;
+    Ok(duration)
 }
 
 fn load_uv(input_path: &Path) -> Result<DynamicImage, image::ImageError> {
