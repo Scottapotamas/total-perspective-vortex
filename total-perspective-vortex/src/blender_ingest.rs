@@ -147,7 +147,7 @@ fn distance_catmull(control_points: &[BlenderPoint]) -> Result<f32, String> {
 }
 
 pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> Result<f32, String> {
-    let mut distance = 0.0;
+    let distance;
 
     match points.len() {
         1 => return Err("Duration for one point?".to_string()),
@@ -160,7 +160,8 @@ pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> Result<f32, St
         _ => return Err("Can't calculate duration on this number of points".to_string()),
     }
 
-    let duration = distance / speed;
+    let duration = (distance / speed) * 1000.0; // in milliseconds
+
     //    println!(
     //        "Effector will take {} seconds to travel {} mm at {} mm/sec",
     //        duration, distance, speed

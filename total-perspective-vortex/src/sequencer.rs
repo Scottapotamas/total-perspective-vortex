@@ -75,17 +75,13 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
             _ => (),
         }
 
+        let mut spline_time = 0.0;
+
         // Calculate movements to follow the line/spline
         for geometry in input_spline.points.windows(window_size) {
             // Calculate the duration of this move, and accumulate it for the whole spline
             let move_time = calculate_duration(geometry, 300.0).unwrap();
-
-            // Calculate the start and end times of the move in the set,
-            let timestamp_begin = input_spline.target_duration;
-            let timestamp_end = input_spline.target_duration + move_time;
-
-            // resolve mutability/responsibility conflict?
-            //            input_spline.target_duration += move_time;
+            spline_time = spline_time + move_time;
 
             last_point = geometry[1];
 
@@ -102,7 +98,7 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
                     id: movement_events.len() as u32,
                     reference: 0,
                     motion_type: spline_type,
-                    duration: (move_time * 1000.0) as u32,
+                    duration: move_time as u32,
                     points: points_list,
                 },
             });
