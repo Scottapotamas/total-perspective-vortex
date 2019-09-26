@@ -18,6 +18,7 @@ pub struct BlenderSpline {
     pub spline_type: String,
     #[serde(rename = "uv")]
     pub uv_path: String,
+    #[serde(default)]
     pub cyclic: bool,
     #[serde(skip)]
     pub target_duration: f32,
@@ -133,16 +134,14 @@ fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> Result<BlenderP
 fn distance_catmull(control_points: &[BlenderPoint]) -> Result<f32, String> {
     let mut accumulated_length: f32 = 0.0;
 
-    let samples: Vec<u32> = (0..100).collect();
+    let samples: Vec<u32> = (1..99).collect();
 
     for test_point in samples.windows(2) {
         let a = interpolate_catmull_point(control_points, test_point[0] as f32 * 0.01)?;
         let b = interpolate_catmull_point(control_points, test_point[1] as f32 * 0.01)?;
 
         accumulated_length += distance_3d(&a, &b);
-        println!("Length {}", accumulated_length);
     }
-    println!("FinalLength {}", accumulated_length);
 
     Ok(accumulated_length)
 }

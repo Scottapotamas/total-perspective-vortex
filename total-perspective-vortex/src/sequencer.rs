@@ -110,6 +110,7 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
             // Provide lighting matching this movement
             println!("Lighting to process for this spline");
         }
+    }
     // Assign all the moves, leds, and extra actions, and apply unique global ID's to all of them
 
     let mut event_identifier = 0;
