@@ -4,10 +4,10 @@ use std::path::Path;
 use serde::Deserialize;
 
 extern crate image;
+use self::image::DynamicImage;
 use image::{imageops, GenericImageView};
 
 extern crate colorsys;
-use self::image::DynamicImage;
 use colorsys::{Hsl, Rgb};
 
 #[derive(Deserialize, Debug, Clone)]
@@ -178,7 +178,6 @@ fn load_uv(input_path: &Path) -> Result<DynamicImage, image::ImageError> {
 // The blender exported UV map is a X*Y sized RGB8 PNG file and we want a 1D set of HSL colours
 fn convert_uv(image: DynamicImage) -> Vec<Hsl> {
     let width = image.dimensions().0;
-    //    println!("UV Map is {}px long, in {:?}", width, image.color());
 
     let mut next_img = image.clone();
     let first_row = imageops::crop(&mut next_img, 0, 0, width, 1);
@@ -203,8 +202,6 @@ fn convert_uv(image: DynamicImage) -> Vec<Hsl> {
 
 // Create a fallback white 2-point value pair to provide lighting on moves which didn't have a valid UV map provided.
 fn generate_placeholder_uv_data() -> Vec<Hsl> {
-    //    println!("Generating white colour as fallback for missing UV");
-
     let mut hue_list: Vec<Hsl> = Vec::new();
     hue_list.push(Hsl::new(0.0, 0.0, 0.5, Option::from(1.0)));
     hue_list.push(Hsl::new(0.0, 0.0, 0.5, Option::from(1.0)));

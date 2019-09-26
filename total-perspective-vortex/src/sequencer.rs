@@ -2,6 +2,9 @@ use crate::blender_ingest::*;
 use crate::zaphod_export::*;
 use colorsys::Hsl;
 
+const MOVEMENT_SPEED: f32 = 200.0;
+const CLUSTER_THRESHOLD: f64 = 300.0;
+
 // Generate a move between A and B
 fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAction> {
     if a != b {
@@ -13,7 +16,7 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
 
         return Some(DeltaAction {
             id: 0,
-            action: String::from("transit"),
+            action: String::from("queue_movement"),
             payload: Motion {
                 id: 0,
                 reference: 0,
@@ -68,7 +71,7 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
         // Generate a move from the end of the last spline to the start of the next spline
         let next_point = input_spline.points[0].clone();
 
-        match move_between(last_point, next_point, 300.0) {
+        match move_between(last_point, next_point, MOVEMENT_SPEED) {
             Some(mut transit) => {
                 transit.payload.id = movement_events.len() as u32;
                 movement_events.push(transit);
@@ -81,7 +84,7 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
         // Calculate movements to follow the line/spline
         for geometry in input_spline.points.windows(window_size) {
             // Calculate the duration of this move, and accumulate it for the whole spline
-            let move_time = calculate_duration(geometry, 300.0).unwrap();
+            let move_time = calculate_duration(geometry, MOVEMENT_SPEED).unwrap();
             spline_time = spline_time + move_time;
 
             last_point = geometry[1];
@@ -116,7 +119,7 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
         // this effectively 'de-dupes' the command set for gentle gradients
         for (i, next_colour) in input_colors.iter().enumerate() {
             // Check if our tracked colour and this point are sufficiently visually different
-            if distance_hsl(start_colour.1, next_colour).abs() > 300.0 {
+            if distance_hsl(start_colour.1, next_colour).abs() > CLUSTER_THRESHOLD {
                 // Calculate the duration of the interval between selected points
                 let step_difference = i - start_colour.0;
                 let fade_duration = step_difference as f32 * step_duration;

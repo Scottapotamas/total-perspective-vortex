@@ -76,14 +76,6 @@ fn process_frame_folder(entry: &DirEntry) {
         // TODO consider supporting color inversion?
     }
 
-    /*
-    let min_duration: f32 = parsed_splines
-        .iter()
-        .map(|s| s.spline.target_duration)
-        .sum();
-    println!("Total time is {}", min_duration);
-    */
-
     // Take our spline+illumination data, and generate an optimised tool-path
     let planned_events = sequence_events(parsed_splines);
 
