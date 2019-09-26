@@ -68,7 +68,10 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
         let next_point = input_spline.points[0].clone();
 
         match move_between(last_point, next_point, 300.0) {
-            Some(transit) => movement_events.push(transit),
+            Some(mut transit) => {
+                transit.payload.id = movement_events.len() as u32;
+                movement_events.push(transit);
+            }
             _ => println!("No transit required"),
         }
 
