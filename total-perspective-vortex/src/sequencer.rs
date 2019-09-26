@@ -1,5 +1,6 @@
 use crate::blender_ingest::*;
 use crate::zaphod_export::*;
+use colorsys::Hsl;
 
 // Generate a move between A and B
 fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAction> {
@@ -102,13 +103,62 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
                     points: points_list,
                 },
             });
+        }
 
-            // Provide lighting matching this movement
-            println!("Lighting to process for this spline");
+        // Generate lighting events matching the UV for this movement
+        let lighting_steps = input_colors.len();
+        let step_duration = spline_time / lighting_steps as f32;
+
+        // Keep track of the colour at the start of a given cluster
+        let mut start_colour: (usize, &Hsl) = (0, &input_colors[0]);
+
+        // Run through the gradient and generate planner fades between visually distinct colours
+        // this effectively 'de-dupes' the command set for gentle gradients
+        for (i, next_colour) in input_colors.iter().enumerate() {
+            // Check if our tracked colour and this point are sufficiently visually different
+            if distance_hsl(start_colour.1, next_colour).abs() > 300.0 {
+                // Calculate the duration of the interval between selected points
+                let step_difference = i - start_colour.0;
+                let fade_duration = step_difference as f32 * step_duration;
+
+                // Grab and format [0,1] the colours into the delta-compatible tuple
+                let cluster_start = (
+                    start_colour.1.get_hue() as f32 / 360.0,
+                    start_colour.1.get_saturation() as f32 / 100.0,
+                    start_colour.1.get_lightness() as f32 / 100.0,
+                );
+
+                let cluster_end = (
+                    next_colour.get_hue() as f32 / 360.0,
+                    next_colour.get_saturation() as f32 / 100.0,
+                    next_colour.get_lightness() as f32 / 100.0,
+                );
+
+                // Add the event to the lighting events pool
+                let fade = LightAnimation {
+                    animation_type: 1,
+                    id: 2,
+                    duration: fade_duration as u32,
+                    points: vec![cluster_start, cluster_end],
+                };
+
+                lighting_events.push(LightAction {
+                    id: 0,
+                    action: "queue_light".to_string(),
+                    payload: fade,
+                    comment: "".to_string(),
+                });
+
+                // Set the 'end' of the fade to be the start of the next comparison
+                start_colour.0 = i;
+                start_colour.1 = next_colour;
+            }
+            // else
+            // skip the colour because it's too similar to the tracked 'start' point
         }
     }
-    // Assign all the moves, leds, and extra actions, and apply unique global ID's to all of them
 
+    // Assign all the moves, lights, extra actions a unique global ID, as json doesn't guarantee order
     let mut event_identifier = 0;
 
     movement_events.iter_mut().for_each(|movement| {
