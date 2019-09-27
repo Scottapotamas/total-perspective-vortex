@@ -21,7 +21,7 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
                 id: 0,
                 reference: 0,
                 motion_type: 1,
-                duration: (transit_duration * 1000.0) as u32,
+                duration: transit_duration as u32,
                 points: transit_points,
             },
         });
