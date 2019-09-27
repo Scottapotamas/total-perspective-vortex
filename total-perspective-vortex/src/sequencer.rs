@@ -119,7 +119,9 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
         // this effectively 'de-dupes' the command set for gentle gradients
         for (i, next_colour) in input_colors.iter().enumerate() {
             // Check if our tracked colour and this point are sufficiently visually different
-            if distance_hsl(start_colour.1, next_colour).abs() > CLUSTER_THRESHOLD {
+            if distance_hsl(start_colour.1, next_colour).abs() > CLUSTER_THRESHOLD
+                || lighting_steps < 3
+            {
                 // Calculate the duration of the interval between selected points
                 let step_difference = i - start_colour.0;
                 let fade_duration = step_difference as f32 * step_duration;

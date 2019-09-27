@@ -25,11 +25,19 @@ fn is_frame_folder(entry: &DirEntry) -> bool {
     }
 }
 
+fn is_json_file(entry: &DirEntry) -> bool {
+    entry
+        .file_name()
+        .to_str()
+        .map(|s| s.ends_with(".json")) //&& !s.ends_with("toolpath.json")
+        .unwrap_or(false)
+}
+
 fn main() {
     println!("Welcome to the Total Perspective Vortex!");
 
     // Walk the folder structure looking for frame folders, then process them
-    WalkDir::new("./multi")
+    WalkDir::new("./collected")
         .min_depth(1)
         .max_depth(1)
         .into_iter()
@@ -38,19 +46,22 @@ fn main() {
         .for_each(|x| process_frame_folder(&x));
 }
 
-fn is_json_file(entry: &DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.ends_with(".json") && !s.ends_with("toolpath.json"))
-        .unwrap_or(false)
-}
-
-// From a valid frame folder, find files, process, and generate the tool-path
+// From a valid frame folder, find collections folders to process
 fn process_frame_folder(entry: &DirEntry) {
     println!("\nProcessing Frame {:?}", entry.file_name());
 
-    // Parse the json files in the current directory
+    WalkDir::new(entry.path())
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_entry(|e| e.file_type().is_dir())
+        .filter_map(|v| v.ok())
+        .for_each(|x| process_collection(&x));
+}
+
+// A collection is the lowest level folder. Contains json and uv files from Blender
+fn process_collection(entry: &DirEntry) {
+    // Parse all the json files in the current directory
     let mut parsed_splines: Vec<IlluminatedSpline> = WalkDir::new(entry.path())
         .min_depth(1)
         .max_depth(1)
@@ -69,21 +80,14 @@ fn process_frame_folder(entry: &DirEntry) {
         if glowy_spline.spline.cyclic {
             // Duplicate the first point(s) into the tail to close the loop
             // todo support closed splines
-
         }
 
         // Perform any LED manipulation here
         // TODO consider supporting color inversion?
     }
 
-    // Take our spline+illumination data, and generate an optimised tool-path
+    // Take our spline+illumination data, and generate a tool-path
     let planned_events = sequence_events(parsed_splines);
-
-    //    let render_duration: f32 = parsed_splines
-    //        .iter()
-    //        .map(|s| s.spline.target_duration)
-    //        .sum();
-    //    println!("Total time is {}", render_duration);
 
     // Add header information
     let output_data: DeltaEvents = DeltaEvents {
@@ -91,9 +95,19 @@ fn process_frame_folder(entry: &DirEntry) {
         actions: vec![planned_events],
     };
 
-    // Put the output JSON in the folder alongside the input files
-    let export_json_name = Path::new("toolpath.json");
-    let destination_path = entry.path().join(&export_json_name);
+    // Put the output JSON in the parent folder alongside the other collection exports
+    let collection_name = entry
+        .path()
+        .file_name()
+        .expect("Couldn't get collection name")
+        .to_str()
+        .expect("Failed converting collection name to string");
+
+    let file_name = format!("{}_toolpath.json", collection_name).to_lowercase();
+    let export_json_path = Path::new(&file_name);
+
+    let destination_folder = entry.path().parent().unwrap();
+    let destination_path = destination_folder.join(&export_json_path);
 
     // Write to the JSON file in format suitable for zaphod-bot
     export_toolpath(destination_path.as_path(), output_data);
