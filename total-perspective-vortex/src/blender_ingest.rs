@@ -132,18 +132,18 @@ fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> Result<BlenderP
 
 // Estimate the 3D length of a catmull-rom spline by sampling repeatedly
 fn distance_catmull(control_points: &[BlenderPoint]) -> Result<f32, String> {
-    let mut accumulated_length: f32 = 0.0;
-
     let samples: Vec<u32> = (1..99).collect();
 
-    for test_point in samples.windows(2) {
-        let a = interpolate_catmull_point(control_points, test_point[0] as f32 * 0.01)?;
-        let b = interpolate_catmull_point(control_points, test_point[1] as f32 * 0.01)?;
+    let length: f32 = samples
+        .windows(2)
+        .map(|p| {
+            let a = interpolate_catmull_point(control_points, p[0] as f32 * 0.01).unwrap();
+            let b = interpolate_catmull_point(control_points, p[1] as f32 * 0.01).unwrap();
+            distance_3d(&a, &b)
+        })
+        .sum();
 
-        accumulated_length += distance_3d(&a, &b);
-    }
-
-    Ok(accumulated_length)
+    Ok(length)
 }
 
 pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> Result<f32, String> {
@@ -182,31 +182,27 @@ fn convert_uv(image: DynamicImage) -> Vec<Hsl> {
     let mut next_img = image.clone();
     let first_row = imageops::crop(&mut next_img, 0, 0, width, 1);
 
-    let mut hue_list: Vec<Hsl> = Vec::new();
-
-    for pixel in first_row.pixels() {
-        let rbga_tuple = (
-            pixel.2[0] as f64,
-            pixel.2[1] as f64,
-            pixel.2[2] as f64,
-            pixel.2[3] as f64,
-        );
-        let rgba = Rgb::from(&rbga_tuple);
-        let hsla: Hsl = rgba.as_ref().into();
-
-        hue_list.push(hsla);
-    }
+    let hue_list: Vec<Hsl> = first_row
+        .pixels()
+        .into_iter()
+        .map(|pixel| {
+            Rgb::from((
+                pixel.2[0] as f64,
+                pixel.2[1] as f64,
+                pixel.2[2] as f64,
+                pixel.2[3] as f64,
+            ))
+            .as_ref()
+            .into()
+        })
+        .collect();
 
     return hue_list;
 }
 
-// Create a fallback white 2-point value pair to provide lighting on moves which didn't have a valid UV map provided.
+// Create a fallback white fade pair to provide lighting on moves which didn't have a valid UV map provided.
 fn generate_placeholder_uv_data() -> Vec<Hsl> {
-    let mut hue_list: Vec<Hsl> = Vec::new();
-    hue_list.push(Hsl::new(0.0, 0.0, 0.5, Option::from(1.0)));
-    hue_list.push(Hsl::new(0.0, 0.0, 0.5, Option::from(1.0)));
-
-    return hue_list;
+    return vec![Hsl::new(0.0, 0.0, 50.0, Option::from(1.0)); 2];
 }
 
 // Calculates the distance between two HSL values as expected by human vision models
