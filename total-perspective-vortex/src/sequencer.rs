@@ -188,3 +188,75 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
 
     return event_set;
 }
+
+// The viewer preview data consists of line segments and a UV map
+pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (f32, f32) {
+    let mut poly_points = vec![];
+
+    let mut last_point: BlenderPoint = BlenderPoint {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+        w: 0.0,
+    };
+
+    // Apply transformations to the parsed data
+    for spline_to_process in input {
+        let input_spline = &spline_to_process.spline;
+        let input_colors = &spline_to_process.illumination;
+
+        let (spline_type, window_size) =
+            spline_type_selector(input_spline.spline_type.as_str()).unwrap();
+
+        // Generate a move from the end of the last spline to the start of the next spline
+        let next_point = input_spline.points[0].clone();
+
+        // create transition movement
+        //        poly_points.push(blah);
+
+        let mut spline_time = 0.0;
+
+        // Calculate movements to follow the line/spline
+        for geometry in input_spline.points.windows(window_size) {
+            // Calculate the duration of this move, and accumulate it for the whole spline
+            let move_time = calculate_duration(geometry, MOVEMENT_SPEED).unwrap();
+            spline_time = spline_time + move_time;
+
+            last_point = geometry[1];
+
+            poly_points.extend(
+                vertex_points_from_spline(spline_type, geometry)
+                    .iter()
+                    .cloned(),
+            );
+        }
+    }
+
+    println!("Verts: {:?}", poly_points);
+    return (10.0, 5.0);
+}
+
+fn vertex_points_from_spline(spline_type: u32, geometry: &[BlenderPoint]) -> Vec<(f32, f32, f32)> {
+    let mut points_list: Vec<(f32, f32, f32)> = vec![];
+
+    // take the two points of the line, or sample points from the catmull chain
+    match spline_type {
+        1 => {
+            // Grab the xyz co-ords (discard blender's w term)
+            for point in geometry {
+                points_list.push((point.x, point.y, point.z));
+            }
+        }
+        2 => {
+            let samples: Vec<u32> = (1..99).collect();
+
+            for sample in samples {
+                let point = interpolate_catmull_point(geometry, sample as f32 * 0.01).unwrap();
+                points_list.push((point.x, point.y, point.z));
+            }
+        }
+        _ => println!("Error generating preview vertices for unknown spline type"),
+    }
+
+    return points_list;
+}

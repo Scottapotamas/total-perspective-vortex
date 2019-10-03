@@ -105,6 +105,7 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
 
     // Take our spline+illumination data, and generate a tool-path
     let planned_events = generate_delta_toolpath(&parsed_splines);
+    let viewer_preview = generate_viewer_data(&parsed_splines);
 
     let file_duration: u32 = planned_events
         .delta
