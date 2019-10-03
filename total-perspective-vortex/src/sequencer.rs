@@ -6,7 +6,7 @@ const MOVEMENT_SPEED: f32 = 200.0;
 const CLUSTER_THRESHOLD: f64 = 300.0;
 
 // Returns the motion type (used in the delta toolpath as the selector, and the window size
-fn spline_type_selector(spline_type: &str) -> Option<(u32, u32)> {
+fn spline_type_selector(spline_type: &str) -> Option<(u32, usize)> {
     match spline_type {
         "poly" => {
             return Some((1, 2));
@@ -72,7 +72,8 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
         let input_spline = &spline_to_process.spline;
         let input_colors = &spline_to_process.illumination;
 
-        let (spline_type, window_size) = spline_type_selector(input_spline.spline_type.as_str());
+        let (spline_type, window_size) =
+            spline_type_selector(input_spline.spline_type.as_str()).unwrap();
 
         // Generate a move from the end of the last spline to the start of the next spline
         let next_point = input_spline.points[0].clone();

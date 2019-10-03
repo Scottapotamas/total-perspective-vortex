@@ -99,7 +99,7 @@ fn distance_3d(a: &BlenderPoint, b: &BlenderPoint) -> f32 {
     return distance.abs();
 }
 
-fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> Result<BlenderPoint, String> {
+pub fn interpolate_catmull_point(p: &[BlenderPoint], weight: f32) -> Result<BlenderPoint, String> {
     if weight <= 0.0 || weight >= 1.0 {
         // Weights should be between 0.0-1.0 representing the percentage point to interpolate
         return Err("Can't interpolate catmull with input weight".to_string());
