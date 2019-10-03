@@ -5,6 +5,25 @@ use colorsys::Hsl;
 const MOVEMENT_SPEED: f32 = 200.0;
 const CLUSTER_THRESHOLD: f64 = 300.0;
 
+// Returns the motion type (used in the delta toolpath as the selector, and the window size
+fn spline_type_selector(spline_type: &str) -> Option<(u32, u32)> {
+    match spline_type {
+        "poly" => {
+            return Some((1, 2));
+        }
+        "nurbs" => {
+            return Some((2, 4));
+        }
+        _ => {
+            println!(
+                "Unsupported blender data type: {}",
+                input_spline.spline_type.as_str()
+            );
+            return None;
+        }
+    }
+}
+
 // Generate a move between A and B
 fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAction> {
     if a != b {
@@ -30,7 +49,7 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
     }
 }
 
-pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
+pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
     // A delta-ready toolpath file has sets of events grouped by device (delta, led light, cameras etc).
     let mut movement_events: Vec<DeltaAction> = Vec::new();
     let mut lighting_events: Vec<LightAction> = Vec::new();
@@ -44,29 +63,11 @@ pub fn sequence_events(input: Vec<IlluminatedSpline>) -> ActionGroups {
     };
 
     // Apply transformations to the parsed data
-    for spline_to_process in &input {
+    for spline_to_process in input {
         let input_spline = &spline_to_process.spline;
         let input_colors = &spline_to_process.illumination;
 
-        let mut spline_type = 0;
-        let mut window_size = 0;
-
-        match input_spline.spline_type.as_str() {
-            "poly" => {
-                spline_type = 1;
-                window_size = 2;
-            }
-            "nurbs" => {
-                spline_type = 2;
-                window_size = 4;
-            }
-            _ => {
-                println!(
-                    "Unsupported blender data type: {}",
-                    input_spline.spline_type.as_str()
-                );
-            }
-        }
+        let (spline_type, window_size) = spline_type_selector(input_spline.spline_type.as_str());
 
         // Generate a move from the end of the last spline to the start of the next spline
         let next_point = input_spline.points[0].clone();

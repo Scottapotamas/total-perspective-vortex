@@ -94,7 +94,7 @@ struct FileMetadata {
 // A collection is the deepest level folder. Contains json and (optional) uv files from Blender
 fn process_collection(entry: &DirEntry) -> FileMetadata {
     // Parse all the json files in the current directory
-    let mut parsed_splines: Vec<IlluminatedSpline> = WalkDir::new(entry.path())
+    let parsed_splines: Vec<IlluminatedSpline> = WalkDir::new(entry.path())
         .min_depth(1)
         .max_depth(1)
         .into_iter()
@@ -103,24 +103,8 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         .map(|x| load_blender_data(&x.path()))
         .collect();
 
-    // Manipulate parsed data before any planning is done
-    for glowy_spline in &mut parsed_splines {
-        // Apply transforms like scaling/offsets
-        transform_meters_to_millimeters(&mut glowy_spline.spline.points);
-        glowy_spline.spline.curve_length *= 100.0;
-
-        if glowy_spline.spline.cyclic {
-            // Duplicate the first point(s) into the tail to close the loop
-            // todo support closed splines
-        }
-
-        // Perform
-        // LED manipulation here
-        // TODO consider supporting color inversion?
-    }
-
     // Take our spline+illumination data, and generate a tool-path
-    let planned_events = sequence_events(parsed_splines);
+    let planned_events = generate_delta_toolpath(&parsed_splines);
 
     let file_duration: u32 = planned_events
         .delta
@@ -128,7 +112,6 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         .map(|x| x.payload.duration)
         .sum();
 
-    //let move_range : (u32, u32)
     let first = planned_events.delta.first().unwrap().payload.id;
     let last = planned_events.delta.last().unwrap().payload.id;
 

@@ -47,7 +47,8 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
 
     let json_file = File::open(input_path).expect("JSON file not found");
 
-    let bl_spline: BlenderSpline = serde_json::from_reader(json_file).expect("Error parsing json");
+    let mut bl_spline: BlenderSpline =
+        serde_json::from_reader(json_file).expect("Error parsing json");
 
     let uv_relative_path = Path::new(&bl_spline.uv_path);
     let uv_full_path = folder_root.join(&uv_relative_path);
@@ -56,6 +57,18 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
         Ok(contents) => convert_uv(contents),
         Err(_error) => generate_placeholder_uv_data(),
     };
+
+    // Apply transforms like scaling/offsets
+    transform_meters_to_millimeters(&mut bl_spline.points);
+    bl_spline.curve_length *= 100.0;
+
+    if bl_spline.cyclic {
+        // Duplicate the first point(s) into the tail to close the loop
+        // todo support closed splines
+    }
+
+    // Perform LED manipulation here
+    // TODO consider supporting color inversion?
 
     let temp: IlluminatedSpline = IlluminatedSpline {
         spline: bl_spline,
