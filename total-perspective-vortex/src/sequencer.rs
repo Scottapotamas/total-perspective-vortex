@@ -15,10 +15,7 @@ fn spline_type_selector(spline_type: &str) -> Option<(u32, u32)> {
             return Some((2, 4));
         }
         _ => {
-            println!(
-                "Unsupported blender data type: {}",
-                input_spline.spline_type.as_str()
-            );
+            println!("Unsupported blender data type: {}", spline_type);
             return None;
         }
     }
@@ -47,6 +44,14 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
     } else {
         return None;
     }
+}
+
+fn delta_led_from_hsl(color: &Hsl) -> (f32, f32, f32) {
+    (
+        color.get_hue() as f32 / 360.0,
+        color.get_saturation() as f32 / 100.0,
+        color.get_lightness() as f32 / 100.0,
+    )
 }
 
 pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
@@ -128,17 +133,8 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                 let fade_duration = step_difference as f32 * step_duration;
 
                 // Grab and format [0,1] the colours into the delta-compatible tuple
-                let cluster_start = (
-                    start_colour.1.get_hue() as f32 / 360.0,
-                    start_colour.1.get_saturation() as f32 / 100.0,
-                    start_colour.1.get_lightness() as f32 / 100.0,
-                );
-
-                let cluster_end = (
-                    next_colour.get_hue() as f32 / 360.0,
-                    next_colour.get_saturation() as f32 / 100.0,
-                    next_colour.get_lightness() as f32 / 100.0,
-                );
+                let cluster_start = delta_led_from_hsl(start_colour.1);
+                let cluster_end = delta_led_from_hsl(next_colour);
 
                 // Add the event to the lighting events pool
                 let fade = LightAnimation {
