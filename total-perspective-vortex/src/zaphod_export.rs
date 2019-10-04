@@ -102,3 +102,13 @@ pub fn export_toolpath(write_path: &Path, data: DeltaEvents) {
 
     fs::write(write_path, data_to_write).expect("Unable to write file");
 }
+
+pub fn export_vertices(write_path: &Path, data: Vec<(f32, f32, f32)>) {
+    let data_to_write = serde_json::to_string_pretty(&data).expect("Serialisation Failed");
+
+    fs::write(write_path, data_to_write).expect("Unable to write file");
+}
+
+pub fn export_uv(write_path: &Path, data: f32) {
+    println!("TODO implement UV exporter");
+}

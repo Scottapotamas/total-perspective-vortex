@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 extern crate walkdir;
 use walkdir::{DirEntry, WalkDir};
@@ -50,7 +50,6 @@ fn main() {
         .collect();
 
     let overview_file = serde_json::to_string_pretty(&meta).expect("Summary Serialisation Failed");
-
     fs::write(Path::new("./collection/summary.json"), overview_file).expect("Unable to write file");
 }
 
@@ -131,26 +130,58 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         .expect("Failed converting collection name to string")
         .to_string();
 
-    let mut file_name = format!("{}_toolpath.json", collection_name).to_lowercase();
-    file_name.retain(|c| !c.is_whitespace()); //strip whitespace
-
-    let export_json_path = Path::new(&file_name);
-
     let destination_folder = entry.path().parent().unwrap();
-    let destination_path = destination_folder.join(&export_json_path);
 
-    // Write to the JSON file in format suitable for zaphod-bot
-    export_toolpath(destination_path.as_path(), output_data);
+    let delta_path = format_filename(
+        destination_folder,
+        collection_name.clone(),
+        "toolpath.json".to_string(),
+    );
+
+    let vertex_path = format_filename(
+        destination_folder,
+        collection_name.clone(),
+        "vertices.json".to_string(),
+    );
+
+    let uv_path = format_filename(
+        destination_folder,
+        collection_name.clone(),
+        "uv.png".to_string(),
+    );
+
+    // Write to disk
+    export_toolpath(&delta_path.as_path(), output_data);
+    export_vertices(&vertex_path.as_path(), viewer_preview.0);
+    export_uv(&uv_path.as_path(), viewer_preview.1);
 
     let metadata = FileMetadata {
         collection: collection_name,
-        toolpath_path: destination_path.into_os_string().into_string().unwrap(),
+        toolpath_path: pathbuf_to_string(delta_path),
         duration: file_duration,
         first_move: first,
         last_move: last,
-        viewer_vertices_path: "blah.json".to_string(),
-        viewer_uv_path: "blah.uv".to_string(),
+        viewer_vertices_path: pathbuf_to_string(vertex_path),
+        viewer_uv_path: pathbuf_to_string(uv_path),
     };
 
     return metadata;
+}
+
+fn pathbuf_to_string(input: PathBuf) -> String {
+    input.to_str().unwrap().to_string()
+}
+
+// Takes a destination folder, the name of the collection, and the extension of the file
+// Returns a path to the location of the file, with a cleaner filename
+fn format_filename(destination: &Path, name: String, extension: String) -> PathBuf {
+    let mut collection_name = name.to_lowercase();
+    collection_name.retain(|c| !c.is_whitespace());
+
+    let file_name = format!("{}_{}", collection_name, extension);
+    let path = Path::new(&file_name);
+    let parent_folder = destination.clone();
+    let location = parent_folder.join(&path);
+
+    return location;
 }

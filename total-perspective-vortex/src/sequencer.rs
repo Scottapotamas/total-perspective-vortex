@@ -224,7 +224,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
 }
 
 // The viewer preview data consists of line segments and a UV map
-pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (f32, f32) {
+pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (Vec<(f32, f32, f32)>, f32) {
     let mut poly_points = vec![];
 
     let mut last_point: BlenderPoint = BlenderPoint {
@@ -267,7 +267,7 @@ pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (f32, f32) {
     }
 
     println!("Verts: {:?}", poly_points);
-    return (10.0, 5.0);
+    return (poly_points, 5.0);
 }
 
 fn vertex_points_from_spline(spline_type: u32, geometry: &[BlenderPoint]) -> Vec<(f32, f32, f32)> {
