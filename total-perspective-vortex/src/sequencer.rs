@@ -66,11 +66,11 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
 }
 
 fn delta_led_from_hsl(color: &Hsl) -> (f32, f32, f32) {
-    (
+    return (
         color.get_hue() as f32 / 360.0,
         color.get_saturation() as f32 / 100.0,
         color.get_lightness() as f32 / 100.0,
-    )
+    );
 }
 
 pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
@@ -102,7 +102,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                 // Add the event to the lighting events pool
                 let fade = LightAnimation {
                     animation_type: 1,
-                    id: 2,
+                    id: 1,
                     duration: transit.payload.duration as u32,
                     points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
                 };
@@ -150,7 +150,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
         }
 
         // Generate lighting events matching the UV for this movement
-        let lighting_steps = input_colors.len();
+        let lighting_steps = input_colors.len() - 1;
         let step_duration = spline_time / lighting_steps as f32;
 
         // Keep track of the colour at the start of a given cluster
@@ -161,7 +161,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
         for (i, next_colour) in input_colors.iter().enumerate() {
             // Check if our tracked colour and this point are sufficiently visually different
             if distance_hsl(start_colour.1, next_colour).abs() > CLUSTER_THRESHOLD
-                || lighting_steps < 3
+                || lighting_steps < 3 && i != 0
             {
                 // Calculate the duration of the interval between selected points
                 let step_difference = i - start_colour.0;
