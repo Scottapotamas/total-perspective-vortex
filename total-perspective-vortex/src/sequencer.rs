@@ -5,14 +5,18 @@ use colorsys::Hsl;
 const MOVEMENT_SPEED: f32 = 200.0;
 const CLUSTER_THRESHOLD: f64 = 300.0;
 
-// Returns the motion type (used in the delta toolpath as the selector, and the window size
-fn spline_type_selector(spline_type: &str) -> Option<(u32, usize)> {
+// Returns
+//      motion type (used in the delta as the pathing engine selector)
+//      window size to scan (how many points are needed for a given minimal event),
+//      coordinate index which is the 'first' point of the spline
+//      coordinate index which is the 'last' point of the spline
+fn spline_type_selector(spline_type: &str) -> Option<(u32, usize, usize, usize)> {
     match spline_type {
         "poly" => {
-            return Some((1, 2));
+            return Some((1, 2, 0, 1));
         }
         "nurbs" => {
-            return Some((2, 4));
+            return Some((2, 4, 1, 2));
         }
         _ => {
             println!("Unsupported blender data type: {}", spline_type);
@@ -24,6 +28,21 @@ fn spline_type_selector(spline_type: &str) -> Option<(u32, usize)> {
 // Generate a move between A and B
 fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAction> {
     if a != b {
+        // Generate transit move instead of requiring a start from home
+        if a.x == 0.0 && a.y == 0.0 && a.z == 0.0 {
+            return Some(DeltaAction {
+                id: 0,
+                action: String::from("queue_movement"),
+                payload: Motion {
+                    id: 0,
+                    reference: 0,
+                    motion_type: 0,
+                    duration: 500,
+                    points: vec![(b.x, b.y, b.z)],
+                },
+            });
+        }
+
         let transit_points: Vec<(f32, f32, f32)> = vec![a, b]
             .iter()
             .map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z))
@@ -72,15 +91,30 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
         let input_spline = &spline_to_process.spline;
         let input_colors = &spline_to_process.illumination;
 
-        let (spline_type, window_size) =
+        let (spline_type, window_size, spline_start_index, spline_finish_index) =
             spline_type_selector(input_spline.spline_type.as_str()).unwrap();
 
         // Generate a move from the end of the last spline to the start of the next spline
-        let next_point = input_spline.points[0].clone();
+        let next_point = input_spline.points[spline_start_index].clone();
 
         match move_between(last_point, next_point, MOVEMENT_SPEED) {
             Some(mut transit) => {
-                transit.payload.id = movement_events.len() as u32;
+                // Add the event to the lighting events pool
+                let fade = LightAnimation {
+                    animation_type: 1,
+                    id: 2,
+                    duration: transit.payload.duration as u32,
+                    points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
+                };
+
+                lighting_events.push(LightAction {
+                    id: 0,
+                    action: "queue_light".to_string(),
+                    payload: fade,
+                    comment: "".to_string(),
+                });
+
+                transit.payload.id = movement_events.len() as u32 + 1;
                 movement_events.push(transit);
             }
             _ => (),
@@ -94,7 +128,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
             let move_time = calculate_duration(geometry, MOVEMENT_SPEED).unwrap();
             spline_time = spline_time + move_time;
 
-            last_point = geometry[1];
+            last_point = geometry[spline_finish_index];
 
             // Grab the xyz co-ords (discard blender's w term)
             let points_list: Vec<(f32, f32, f32)> = geometry
@@ -106,7 +140,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                 id: 0,
                 action: String::from("queue_movement"),
                 payload: Motion {
-                    id: movement_events.len() as u32,
+                    id: movement_events.len() as u32 + 1,
                     reference: 0,
                     motion_type: spline_type,
                     duration: move_time as u32,
@@ -140,7 +174,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                 // Add the event to the lighting events pool
                 let fade = LightAnimation {
                     animation_type: 1,
-                    id: 2,
+                    id: 1,
                     duration: fade_duration as u32,
                     points: vec![cluster_start, cluster_end],
                 };
@@ -205,7 +239,7 @@ pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (f32, f32) {
         let input_spline = &spline_to_process.spline;
         let input_colors = &spline_to_process.illumination;
 
-        let (spline_type, window_size) =
+        let (spline_type, window_size, spline_start_index, spline_finish_index) =
             spline_type_selector(input_spline.spline_type.as_str()).unwrap();
 
         // Generate a move from the end of the last spline to the start of the next spline
