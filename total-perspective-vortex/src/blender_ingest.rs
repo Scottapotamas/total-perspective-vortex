@@ -64,7 +64,23 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
 
     if bl_spline.cyclic {
         // Duplicate the first point(s) into the tail to close the loop
-        // todo support closed splines
+        match bl_spline.spline_type.as_str() {
+            "poly" => {
+                // Put the first point at the end of the set
+                bl_spline
+                    .points
+                    .push(bl_spline.points.first().unwrap().clone());
+            }
+            "nurbs" => {
+                // Put the first two points at the end of the set
+                bl_spline.points.push(bl_spline.points[0].clone());
+                bl_spline.points.push(bl_spline.points[1].clone());
+                bl_spline.points.push(bl_spline.points[2].clone());
+            }
+            _ => {
+                println!("Unsupported blender data type");
+            }
+        }
     }
 
     // Perform LED manipulation here
