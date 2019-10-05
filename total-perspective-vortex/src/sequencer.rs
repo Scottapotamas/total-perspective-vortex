@@ -1,5 +1,9 @@
-use crate::blender_ingest::*;
-use crate::zaphod_export::*;
+use crate::color_utils::*;
+use crate::delta_utils::*;
+
+use crate::export_types::*;
+use crate::import_types::*;
+
 use colorsys::Hsl;
 
 const MOVEMENT_SPEED: f32 = 200.0;
@@ -63,14 +67,6 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
     } else {
         return None;
     }
-}
-
-fn delta_led_from_hsl(color: &Hsl) -> (f32, f32, f32) {
-    return (
-        color.get_hue() as f32 / 360.0,
-        color.get_saturation() as f32 / 100.0,
-        color.get_lightness() as f32 / 100.0,
-    );
 }
 
 pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
@@ -258,39 +254,10 @@ pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (Vec<(f32, f32, f
 
             last_point = geometry[1];
 
-            poly_points.extend(
-                vertex_points_from_spline(spline_type, geometry)
-                    .iter()
-                    .cloned(),
-            );
+            poly_points.extend(vertex_points_from_spline(spline_type, geometry));
         }
     }
 
-    println!("Verts: {:?}", poly_points);
+    //    println!("Verts: {:?}", poly_points);
     return (poly_points, 5.0);
-}
-
-fn vertex_points_from_spline(spline_type: u32, geometry: &[BlenderPoint]) -> Vec<(f32, f32, f32)> {
-    let mut points_list: Vec<(f32, f32, f32)> = vec![];
-
-    // take the two points of the line, or sample points from the catmull chain
-    match spline_type {
-        1 => {
-            // Grab the xyz co-ords (discard blender's w term)
-            for point in geometry {
-                points_list.push((point.x, point.y, point.z));
-            }
-        }
-        2 => {
-            let samples: Vec<u32> = (1..99).collect();
-
-            for sample in samples {
-                let point = interpolate_catmull_point(geometry, sample as f32 * 0.01).unwrap();
-                points_list.push((point.x, point.y, point.z));
-            }
-        }
-        _ => println!("Error generating preview vertices for unknown spline type"),
-    }
-
-    return points_list;
 }

@@ -3,14 +3,21 @@ use std::path::{Path, PathBuf};
 extern crate walkdir;
 use walkdir::{DirEntry, WalkDir};
 
-pub mod blender_ingest;
-use blender_ingest::*;
+pub mod import_data;
+pub mod import_types;
+use import_data::*;
+use import_types::*;
 
-pub mod zaphod_export;
-use zaphod_export::*;
+pub mod export_data;
+pub mod export_types;
+use export_data::*;
+use export_types::*;
 
 pub mod sequencer;
 use sequencer::*;
+
+pub mod color_utils;
+pub mod delta_utils;
 
 use serde::Serialize;
 use std::fs;
@@ -169,7 +176,7 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
 }
 
 fn pathbuf_to_string(input: PathBuf) -> String {
-    input.to_str().unwrap().to_string()
+    return input.to_str().unwrap().to_string();
 }
 
 // Takes a destination folder, the name of the collection, and the extension of the file
