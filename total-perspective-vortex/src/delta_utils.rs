@@ -6,8 +6,13 @@ pub fn transform_meters_to_millimeters(points: &mut Vec<BlenderPoint>) {
         point.x *= 100.0;
         point.y *= 100.0;
         point.z *= 100.0;
+    }
+}
 
-        point.z += 30.0;
+// Used for shifting the geometry upwards in the delta's movement volume
+pub fn transform_z_axis(points: &mut Vec<BlenderPoint>, amount: f32) {
+    for point in points {
+        point.z += amount;
     }
 }
 

@@ -32,8 +32,9 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
         Err(_error) => generate_placeholder_uv_data(),
     };
 
-    // Apply transforms like scaling/offsets
+    // Apply coordinate transforms like scaling/offsets
     transform_meters_to_millimeters(&mut bl_spline.points);
+    transform_z_axis(&mut bl_spline.points, 30.0);
     bl_spline.curve_length *= 100.0;
 
     if bl_spline.cyclic {
