@@ -110,10 +110,7 @@ pub fn calculate_duration(points: &[BlenderPoint], speed: f32) -> Result<f32, St
     Ok(duration)
 }
 
-pub fn vertex_points_from_spline(
-    spline_type: u32,
-    geometry: &[BlenderPoint],
-) -> Vec<(f32, f32, f32)> {
+pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint]) -> Vec<(f32, f32, f32)> {
     let mut points_list: Vec<(f32, f32, f32)> = vec![];
 
     // take the two points of the line, or sample points from the catmull chain

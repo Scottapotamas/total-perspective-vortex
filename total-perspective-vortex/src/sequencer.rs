@@ -220,7 +220,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
 }
 
 // The viewer preview data consists of line segments and a UV map
-pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (Vec<(f32, f32, f32)>, f32) {
+pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (Vec<(f32, f32, f32)>, Vec<Hsl>) {
     let mut poly_points = vec![];
 
     let mut last_point: BlenderPoint = BlenderPoint {
@@ -252,12 +252,11 @@ pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (Vec<(f32, f32, f
             let move_time = calculate_duration(geometry, MOVEMENT_SPEED).unwrap();
             spline_time = spline_time + move_time;
 
-            last_point = geometry[1];
-
-            poly_points.extend(vertex_points_from_spline(spline_type, geometry));
+            poly_points.extend(vertex_from_spline(spline_type, geometry));
         }
+
+        uv_colors.extend(input_colors.clone());
     }
 
-    //    println!("Verts: {:?}", poly_points);
-    return (poly_points, 5.0);
+    return (poly_points, uv_colors);
 }

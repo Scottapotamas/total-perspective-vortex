@@ -1,4 +1,5 @@
 use colorsys::Hsl;
+use colorsys::Rgb;
 
 // Calculates the distance between two HSL values as expected by human vision models
 // Its OK to add a constant k to the lightness difference as it has arbitrary importance
@@ -31,5 +32,15 @@ pub fn delta_led_from_hsl(color: &Hsl) -> (f32, f32, f32) {
         color.get_hue() as f32 / 360.0,
         color.get_saturation() as f32 / 100.0,
         color.get_lightness() as f32 / 100.0,
+    );
+}
+
+pub fn hsl_to_rgb8(color: &Hsl) -> (u8, u8, u8) {
+    let rgb = Rgb::from(color);
+
+    return (
+        rgb.get_red() as u8,
+        rgb.get_green() as u8,
+        rgb.get_blue() as u8,
     );
 }

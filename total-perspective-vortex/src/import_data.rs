@@ -61,12 +61,10 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
     // Perform LED manipulation here
     // TODO consider supporting color inversion?
 
-    let temp: IlluminatedSpline = IlluminatedSpline {
+    return IlluminatedSpline {
         spline: bl_spline,
         illumination: input_colors,
     };
-
-    return temp;
 }
 
 fn load_uv(input_path: &Path) -> Result<DynamicImage, image::ImageError> {

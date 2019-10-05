@@ -1,7 +1,11 @@
 use std::fs;
 use std::path::Path;
 
+use crate::color_utils::*;
 use crate::export_types::*;
+use colorsys::Hsl;
+
+use image::{ImageBuffer, Rgb, RgbImage};
 
 pub fn generate_preparation_movement(start_position: (f32, f32, f32)) -> DeltaAction {
     let home_at_position = vec![start_position];
@@ -40,6 +44,15 @@ pub fn export_vertices(write_path: &Path, data: Vec<(f32, f32, f32)>) {
     fs::write(write_path, data_to_write).expect("Unable to write file");
 }
 
-pub fn export_uv(write_path: &Path, data: f32) {
-    println!("TODO implement UV exporter");
+pub fn export_uv(write_path: &Path, data: Vec<Hsl>) {
+    let mut image_buffer: RgbImage = ImageBuffer::new(data.len() as u32, 16);
+
+    for (x, _y, pixel) in image_buffer.enumerate_pixels_mut() {
+        let hue = data[x as usize].clone();
+        let (red, green, blue): (u8, u8, u8) = hsl_to_rgb8(&hue);
+
+        *pixel = Rgb([red, green, blue]);
+    }
+
+    image_buffer.save(write_path).unwrap();
 }
