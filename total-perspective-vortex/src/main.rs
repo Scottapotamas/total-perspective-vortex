@@ -19,6 +19,7 @@ use sequencer::*;
 pub mod color_utils;
 pub mod delta_utils;
 
+use itertools::Itertools;
 use serde::Serialize;
 use std::fs;
 
@@ -47,7 +48,7 @@ fn main() {
     println!("Welcome to the Total Perspective Vortex!");
 
     // Walk the folder structure looking for frame folders, then process them
-    let meta: Vec<FrameMetadata> = WalkDir::new("./collection")
+    let mut frame_meta: Vec<FrameMetadata> = WalkDir::new("./collection")
         .min_depth(1)
         .max_depth(1)
         .into_iter()
@@ -56,13 +57,32 @@ fn main() {
         .map(|x| process_frame_folder(&x))
         .collect();
 
-    let overview_file = serde_json::to_string_pretty(&meta).expect("Summary Serialisation Failed");
+    // Sort the frames in ascending numeric order. Unstable sort means equal elements may move
+    frame_meta.sort_unstable_by_key(|x| x.frame_num);
+
+    let mut all_collection_names = vec![];
+
+    for frame in &frame_meta {
+        for collection in &frame.files {
+            all_collection_names.push(collection.collection.clone());
+        }
+    }
+    let unique_collection_names: Vec<String> = all_collection_names.into_iter().unique().collect();
+
+    let summary = AnimationMetadata {
+        collections: unique_collection_names,
+        frames: frame_meta,
+    };
+
+    let overview_file =
+        serde_json::to_string_pretty(&summary).expect("Summary Serialisation Failed");
     fs::write(Path::new("./collection/summary.json"), overview_file).expect("Unable to write file");
 }
 
 // From a valid frame folder, find collections folders to process
 fn process_frame_folder(entry: &DirEntry) -> FrameMetadata {
     let frame_folder_name = format!("{}", entry.file_name().to_str().unwrap());
+    let frame_number = frame_folder_name.parse::<i32>().unwrap();
     println!("\nProcessing Frame {}", frame_folder_name);
 
     let exported_file_metadata: Vec<FileMetadata> = WalkDir::new(entry.path())
@@ -75,14 +95,20 @@ fn process_frame_folder(entry: &DirEntry) -> FrameMetadata {
         .collect();
 
     return FrameMetadata {
-        frame_num: frame_folder_name,
+        frame_num: frame_number,
         files: exported_file_metadata,
     };
 }
 
 #[derive(Serialize, Debug)]
+struct AnimationMetadata {
+    collections: Vec<String>,
+    frames: Vec<FrameMetadata>,
+}
+
+#[derive(Serialize, Debug)]
 struct FrameMetadata {
-    frame_num: String,
+    frame_num: i32,
     files: Vec<FileMetadata>,
 }
 
