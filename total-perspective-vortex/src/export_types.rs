@@ -54,7 +54,7 @@ pub struct LightAnimation {
     #[serde(rename = "type")]
     pub animation_type: u32,
     pub id: u32,
-    pub duration: u32,
+    pub duration: f32,
     pub points: Vec<(f32, f32, f32)>,
 }
 

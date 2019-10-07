@@ -99,7 +99,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                 let fade = LightAnimation {
                     animation_type: 1,
                     id: 1,
-                    duration: transit.payload.duration as u32,
+                    duration: transit.payload.duration as f32,
                     points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
                 };
 
@@ -147,10 +147,12 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
 
         // Generate lighting events matching the UV for this movement
         let lighting_steps = input_colors.len() - 1;
-        let step_duration = spline_time / lighting_steps as f32;
+        let step_duration = spline_time as f32 / lighting_steps as f32;
 
         // Keep track of the colour at the start of a given cluster
         let mut start_colour: (usize, &Hsl) = (0, &input_colors[0]);
+
+        let mut sum_lighting_time = 0.0;
 
         // Run through the gradient and generate planner fades between visually distinct colours
         // this effectively 'de-dupes' the command set for gentle gradients
@@ -171,7 +173,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                 let fade = LightAnimation {
                     animation_type: 1,
                     id: 1,
-                    duration: fade_duration as u32,
+                    duration: fade_duration,
                     points: vec![cluster_start, cluster_end],
                 };
 
@@ -185,6 +187,8 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                 // Set the 'end' of the fade to be the start of the next comparison
                 start_colour.0 = i;
                 start_colour.1 = next_colour;
+
+                sum_lighting_time = sum_lighting_time + fade_duration;
             }
             // else
             // skip the colour because it's too similar to the tracked 'start' point
