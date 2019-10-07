@@ -51,7 +51,7 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
             .iter()
             .map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z))
             .collect();
-        let transit_duration = calculate_duration(&[a, b], speed).unwrap();
+        let transit_duration = calculate_duration(&[a, b], speed).unwrap() as u32;
 
         return Some(DeltaAction {
             id: 0,
@@ -60,7 +60,7 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
                 id: 0,
                 reference: 0,
                 motion_type: 1,
-                duration: transit_duration as u32,
+                duration: transit_duration,
                 points: transit_points,
             },
         });
@@ -116,12 +116,12 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
             _ => (),
         }
 
-        let mut spline_time = 0.0;
+        let mut spline_time = 0;
 
         // Calculate movements to follow the line/spline
         for geometry in input_spline.points.windows(window_size) {
             // Calculate the duration of this move, and accumulate it for the whole spline
-            let move_time = calculate_duration(geometry, MOVEMENT_SPEED).unwrap();
+            let move_time = calculate_duration(geometry, MOVEMENT_SPEED).unwrap() as u32;
             spline_time = spline_time + move_time;
 
             last_point = geometry[spline_finish_index];
@@ -139,7 +139,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
                     id: movement_events.len() as u32 + 1,
                     reference: 0,
                     motion_type: spline_type,
-                    duration: move_time as u32,
+                    duration: move_time,
                     points: points_list,
                 },
             });
