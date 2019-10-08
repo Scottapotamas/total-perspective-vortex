@@ -116,7 +116,7 @@ struct FrameMetadata {
 struct FileMetadata {
     collection: String,
     toolpath_path: String,
-    duration: u32,
+    duration: f32,
     first_move: u32,
     last_move: u32,
     viewer_vertices_path: String,

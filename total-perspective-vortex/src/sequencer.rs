@@ -226,13 +226,7 @@ pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
 // The viewer preview data consists of line segments and a UV map
 pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (Vec<(f32, f32, f32)>, Vec<Hsl>) {
     let mut poly_points = vec![];
-
-    let mut last_point: BlenderPoint = BlenderPoint {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-        w: 0.0,
-    };
+    let mut uv_colors = vec![];
 
     // Apply transformations to the parsed data
     for spline_to_process in input {
