@@ -5,7 +5,8 @@ use crate::color_utils::*;
 use crate::export_types::*;
 use colorsys::Hsl;
 
-use image::{ImageBuffer, Rgb, RgbImage};
+use image::imageops::resize;
+use image::{FilterType, ImageBuffer, Rgb, RgbImage};
 
 pub fn generate_header(title: String) -> EventMetadata {
     return EventMetadata {
@@ -34,5 +35,24 @@ pub fn export_uv(write_path: &Path, data: Vec<Hsl>) {
         *pixel = Rgb([red, green, blue]);
     }
 
-    image_buffer.save(write_path).unwrap();
+    let img_dims = image_buffer.dimensions();
+
+    let new_size = resize(
+        &image_buffer,
+        next_power_two(img_dims.0),
+        16,
+        FilterType::Gaussian,
+    );
+
+    new_size.save(write_path).unwrap();
+}
+
+fn next_power_two(input: u32) -> u32 {
+    for x in 3..13 {
+        let p2 = 2_u32.pow(x);
+        if input < p2 {
+            return p2;
+        }
+    }
+    return 4096;
 }
