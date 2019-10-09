@@ -63,8 +63,8 @@ fn main() {
     let mut all_collection_names = vec![];
 
     for frame in &frame_meta {
-        for collection in &frame.files {
-            all_collection_names.push(collection.collection.clone());
+        for collection in &frame.collections {
+            all_collection_names.push(collection.name.clone());
         }
     }
     let unique_collection_names: Vec<String> = all_collection_names.into_iter().unique().collect();
@@ -96,7 +96,7 @@ fn process_frame_folder(entry: &DirEntry) -> FrameMetadata {
 
     return FrameMetadata {
         frame_num: frame_number,
-        files: exported_file_metadata,
+        collections: exported_file_metadata,
     };
 }
 
@@ -109,14 +109,14 @@ struct AnimationMetadata {
 #[derive(Serialize, Debug)]
 struct FrameMetadata {
     frame_num: i32,
-    files: Vec<FileMetadata>,
+    collections: Vec<FileMetadata>,
 }
 
 #[derive(Serialize, Debug)]
 struct FileMetadata {
-    collection: String,
+    name: String,
     toolpath_path: String,
-    duration: f32,
+    duration: u32,
     first_move: u32,
     last_move: u32,
     viewer_vertices_path: String,
@@ -189,7 +189,7 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
     export_uv(&uv_path.as_path(), viewer_preview.1);
 
     let metadata = FileMetadata {
-        collection: collection_name,
+        name: collection_name,
         toolpath_path: pathbuf_to_string(delta_path),
         duration: file_duration,
         first_move: first,
