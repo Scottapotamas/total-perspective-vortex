@@ -119,6 +119,7 @@ struct FileMetadata {
     duration: u32,
     first_move: u32,
     last_move: u32,
+    num_lights: u32,
     viewer_vertices_path: String,
     viewer_uv_path: String,
 }
@@ -145,9 +146,10 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         .map(|x| x.payload.duration)
         .sum();
 
-    let first = planned_events.delta.first().unwrap().payload.id;
-    let last = planned_events.delta.last().unwrap().payload.id;
+    let first_move = planned_events.delta.first().unwrap().payload.id;
+    let last_move = planned_events.delta.last().unwrap().payload.id;
 
+    let num_lights = planned_events.light.len();
     // Add header information
     let output_data: DeltaEvents = DeltaEvents {
         metadata: generate_header(String::from("VortexFile")),
@@ -192,8 +194,9 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         name: collection_name,
         toolpath_path: pathbuf_to_string(delta_path),
         duration: file_duration,
-        first_move: first,
-        last_move: last,
+        first_move: first_move,
+        last_move: last_move,
+        num_lights: num_lights as u32,
         viewer_vertices_path: pathbuf_to_string(vertex_path),
         viewer_uv_path: pathbuf_to_string(uv_path),
     };
