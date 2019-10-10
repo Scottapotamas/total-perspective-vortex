@@ -24,7 +24,7 @@ pub fn load_blender_data(input_path: &Path) -> IlluminatedSpline {
     let mut bl_spline: BlenderSpline =
         serde_json::from_reader(json_file).expect("Error parsing json");
 
-    let uv_relative_path = Path::new(&bl_spline.uv_path);
+    let uv_relative_path = Path::new("blah.png");
     let uv_full_path = folder_root.join(&uv_relative_path);
 
     let input_colors = match load_uv(uv_full_path.as_path()) {
