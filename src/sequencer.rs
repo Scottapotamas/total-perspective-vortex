@@ -30,7 +30,7 @@ fn spline_type_selector(spline_type: &str) -> Option<(u32, usize, usize, usize)>
 }
 
 // Generate a move between A and B
-fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAction> {
+fn move_between(a: BlenderPoint4, b: BlenderPoint4, speed: f32) -> Option<DeltaAction> {
     if a != b {
         // Generate transit move instead of requiring a start from home
         if a.x == 0.0 && a.y == 0.0 && a.z == 0.0 {
@@ -69,13 +69,13 @@ fn move_between(a: BlenderPoint, b: BlenderPoint, speed: f32) -> Option<DeltaAct
     }
 }
 
-pub fn generate_delta_toolpath(input: &Vec<IlluminatedSpline>) -> ActionGroups {
+pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
     // A delta-ready toolpath file has sets of events grouped by device (delta, led light, cameras etc).
     let mut movement_events: Vec<DeltaAction> = Vec::new();
     let mut lighting_events: Vec<LightAction> = Vec::new();
     let mut additional_steps: Vec<GenericAction> = Vec::new();
 
-    let mut last_point: BlenderPoint = BlenderPoint {
+    let mut last_point: BlenderPoint4 = BlenderPoint4 {
         x: 0.0,
         y: 0.0,
         z: 0.0,

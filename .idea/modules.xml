@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/total-perspective-vortex.iml" filepath="$PROJECT_DIR$/.idea/total-perspective-vortex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/delta-planner.iml" filepath="$PROJECT_DIR$/.idea/delta-planner.iml" />
     </modules>
   </component>
 </project>
