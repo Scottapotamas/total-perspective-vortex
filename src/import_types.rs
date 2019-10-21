@@ -121,8 +121,6 @@ impl Spline for BlenderParticles {
 
 
 
-
-
 pub trait BlenderTransforms {
     fn scale(&mut self, factor: f32);
     fn offset(&mut self, x_offset: f32, y_offset: f32, z_offset: f32);

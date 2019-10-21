@@ -29,43 +29,39 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
 
     // Apply coordinate transforms like scaling/offsets
     // Grab and apply UV data as required
-    match blender_data {
+    match &blender_data {
         BlenderData::PolySpline(mut p) => {
             p.close_loop();
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
             p.offset_points(0.0,0.0,BLENDER_Z_OFFSET_MILLIMETERS);
 
-            let uv_relative_path = Path::new(&p.uv_path);
-            let uv_full_path = folder_root.join(&uv_relative_path);
-            let input_colors = match load_uv(uv_full_path.as_path()) {
+            let uv_full_path = folder_root.join(Path::new(&p.uv_path));
+            p.color = match load_uv(uv_full_path.as_path()) {
                 Ok(contents) => convert_uv(contents),
                 Err(_error) => generate_placeholder_uv_data(),
             };
-
         },
         BlenderData::NURBSSpline(mut p) => {
             p.close_loop();
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
             p.offset_points(0.0,0.0,BLENDER_Z_OFFSET_MILLIMETERS);
 
-            let uv_relative_path = Path::new(&p.uv_path );
-            let uv_full_path = folder_root.join(&uv_relative_path);
-            let input_colors = match load_uv(uv_full_path.as_path()) {
+            let uv_full_path = folder_root.join(Path::new(&p.uv_path ));
+            p.color = match load_uv(uv_full_path.as_path()) {
                 Ok(contents) => convert_uv(contents),
                 Err(_error) => generate_placeholder_uv_data(),
             };
-
-
         },
         BlenderData::Particles(mut p) => {
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
             p.offset_points(0.0,0.0,BLENDER_Z_OFFSET_MILLIMETERS);
 
-            // TODO convert blender's RGB colour to HSL
-            p.color = vec![Hsl::new(0.0, 0.0, 50.0, Option::from(1.0)); 1];
+            let rgb = Rgb::from(&(p.color_rgba.0 as f64, p.color_rgba.1 as f64, p.color_rgba.2 as f64));
+            let hsl = Hsl::from(&rgb);
+            p.color = vec![hsl; 1];
         },
         _ => println!("Unknown blender data format???"),
-    }
+    };
 
     return blender_data;
 }
