@@ -48,7 +48,7 @@ fn main() {
     println!("Welcome to the Total Perspective Vortex!");
 
     // Walk the folder structure looking for frame folders, then process them
-    let mut frame_meta: Vec<FrameMetadata> = WalkDir::new("./collection")
+    let mut frame_meta: Vec<FrameMetadata> = WalkDir::new("./")
         .min_depth(1)
         .max_depth(1)
         .into_iter()
@@ -127,7 +127,7 @@ struct FileMetadata {
 // A collection is the deepest level folder. Contains json and (optional) uv files from Blender
 fn process_collection(entry: &DirEntry) -> FileMetadata {
     // Parse all the json files in the current directory
-    let parsed_splines: Vec<IlluminatedSpline> = WalkDir::new(entry.path())
+    let parsed_splines: Vec<BlenderData> = WalkDir::new(entry.path())
         .min_depth(1)
         .max_depth(1)
         .into_iter()
