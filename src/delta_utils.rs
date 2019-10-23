@@ -83,7 +83,12 @@ pub fn calculate_duration(points: &[BlenderPoint3], speed: f32) -> Result<f32, S
         _ => return Err("Can't calculate duration on this number of points".to_string()),
     }
 
-    let duration = (distance / speed) * 1000.0; // in milliseconds
+    let mut duration = (distance / speed) * 1000.0; // in milliseconds
+
+    if duration < 30.0
+    {
+        duration = 30.0;
+    }
 
     Ok(duration)
 }
