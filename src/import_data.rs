@@ -23,8 +23,8 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
         .expect("Error getting parent path of Blender JSON file");
 
     let json_file = File::open(input_path).expect("Blender JSON file not found");
-    
-    let mut blender_data = serde_json::from_reader(json_file).expect("Blender JSON Parsing Failed");
+
+    let blender_data: BlenderData = serde_json::from_reader(json_file).expect("Blender JSON Parsing Failed");
 
     // Apply coordinate transforms like scaling/offsets
     // Grab and apply UV data as required

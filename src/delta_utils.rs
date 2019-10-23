@@ -1,7 +1,7 @@
 use crate::import_types::*;
 
 // Calculate the 3D distance in mm between two points
-fn distance_3d(a: &BlenderPoint4, b: &BlenderPoint4) -> f32 {
+fn distance_3d(a: &BlenderPoint3, b: &BlenderPoint3) -> f32 {
     let dx = a.x - b.x;
     let dy = a.y - b.y;
     let dz = a.z - b.z;
@@ -10,7 +10,7 @@ fn distance_3d(a: &BlenderPoint4, b: &BlenderPoint4) -> f32 {
     return distance.abs();
 }
 
-pub fn interpolate_catmull_point(p: &[BlenderPoint4], weight: f32) -> Result<BlenderPoint4, String> {
+pub fn interpolate_catmull_point(p: &[BlenderPoint3], weight: f32) -> Result<BlenderPoint3, String> {
     if weight <= 0.0 || weight >= 1.0 {
         // Weights should be between 0.0-1.0 representing the percentage point to interpolate
         return Err("Can't interpolate catmull with input weight".to_string());
@@ -46,16 +46,15 @@ pub fn interpolate_catmull_point(p: &[BlenderPoint4], weight: f32) -> Result<Ble
             + (2.0 * p[0].z - 5.0 * p[1].z + 4.0 * p[2].z - p[3].z) * t2
             + (-p[0].z + 3.0 * p[1].z - 3.0 * p[2].z + p[3].z) * t3);
 
-    Ok(BlenderPoint4 {
+    Ok(BlenderPoint3 {
         x: out_x,
         y: out_y,
         z: out_z,
-        w: 0.0,
     })
 }
 
 // Estimate the 3D length of a catmull-rom spline by sampling repeatedly
-fn distance_catmull(control_points: &[BlenderPoint4]) -> Result<f32, String> {
+fn distance_catmull(control_points: &[BlenderPoint3]) -> Result<f32, String> {
     let samples: Vec<u32> = (1..99).collect();
 
     let length: f32 = samples
@@ -70,7 +69,7 @@ fn distance_catmull(control_points: &[BlenderPoint4]) -> Result<f32, String> {
     Ok(length)
 }
 
-pub fn calculate_duration(points: &[BlenderPoint4], speed: f32) -> Result<f32, String> {
+pub fn calculate_duration(points: &[BlenderPoint3], speed: f32) -> Result<f32, String> {
     let distance;
 
     match points.len() {
@@ -89,7 +88,7 @@ pub fn calculate_duration(points: &[BlenderPoint4], speed: f32) -> Result<f32, S
     Ok(duration)
 }
 
-pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint4]) -> Vec<(f32, f32, f32)> {
+pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint3]) -> Vec<(f32, f32, f32)> {
     let mut points_list: Vec<(f32, f32, f32)> = vec![];
 
     // take the two points of the line, or sample points from the catmull chain

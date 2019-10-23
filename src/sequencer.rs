@@ -11,7 +11,7 @@ const CLUSTER_THRESHOLD: f64 = 300.0;
 
 
 // Generate a move between A and B
-fn move_between(a: BlenderPoint4, b: BlenderPoint4, speed: f32) -> Option<Motion> {
+fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion> {
     if a != b {
         // Generate transit move instead of requiring a start from home
         if a.x == 0.0 && a.y == 0.0 && a.z == 0.0 {
@@ -43,7 +43,7 @@ fn move_between(a: BlenderPoint4, b: BlenderPoint4, speed: f32) -> Option<Motion
     }
 }
 
-fn add_starting_move( events: &mut ActionGroups , a: BlenderPoint4, b: BlenderPoint4,)
+fn add_starting_move( events: &mut ActionGroups , a: BlenderPoint3, b: BlenderPoint3,)
 {
     match move_between(a, b, MOVEMENT_SPEED) {
         Some( transit) => {
@@ -61,15 +61,42 @@ fn add_starting_move( events: &mut ActionGroups , a: BlenderPoint4, b: BlenderPo
     }
 }
 
+// Generates lighting 'fade' events between the (expanding until visually different) edges of the colour vector slice
+fn generate_visually_distinct_fade<'a>( events: &mut ActionGroups, i: usize, steps: usize, duration:f32, start_colour: (usize, &'a Hsl), next_colour: (usize, &'a Hsl),  ) -> (usize, &'a Hsl)
+{
+    if distance_hsl(start_colour.1, next_colour.1).abs() > CLUSTER_THRESHOLD || steps < 3 && i != 0
+    {
+        // Calculate the duration of the interval between selected points
+        let step_difference = i - start_colour.0;
+        let fade_duration = step_difference as f32 * duration;
+
+        // Grab and format [0,1] the colours into the delta-compatible tuple
+        let cluster_start = delta_led_from_hsl(start_colour.1);
+        let cluster_end = delta_led_from_hsl(next_colour.1);
+
+        // Add the event to the lighting events pool
+        events.add_light_action(Fade {
+            animation_type: 1,
+            id: 1,
+            duration: fade_duration,
+            points: vec![cluster_start, cluster_end],
+        });
+
+        // Set the 'end' of the fade to be the start of the next comparison
+        return next_colour;
+    }
+
+    return start_colour;
+}
+
 pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
     // A delta-ready toolpath file has sets of events grouped by device (delta, led light, cameras etc).
     let mut event_set = ActionGroups::new();
     
-    let mut last_point: BlenderPoint4 = BlenderPoint4 {
+    let mut last_point: BlenderPoint3 = BlenderPoint3 {
         x: 0.0,
         y: 0.0,
         z: 0.0,
-        w: 0.0,
     };
 
     // Apply transformations to the parsed data
@@ -80,29 +107,20 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
             BlenderData::PolySpline(spline) => {
 
                 // Generate a move from the end of the last spline to the start of the next spline
-                let next_point = spline.points[0].clone();
+                add_starting_move( &mut event_set, last_point, spline.points[0].clone().into_bp3() );
 
-                add_starting_move( &mut event_set, last_point, next_point );
-
-                // Polysplines are a chain of lines, a line consists of a pair of BlenderPoint4 co-ordinates
+                // Polysplines are a chain of lines, a line consists of a pair of BlenderPoint co-ordinates
                 for geometry in spline.points.windows(BlenderPoly::get_recommended_window_size()) {
-                    // Calculate the duration of this move, and accumulate it for the whole spline
-                    let move_time = calculate_duration(geometry, MOVEMENT_SPEED).unwrap() as u32;
 
-                    last_point = BlenderPoly::get_end_point(geometry);
+                    let geom: [BlenderPoint3;2] = [geometry[0].into_bp3(), geometry[1].into_bp3() ];
 
-                    // Grab the xyz co-ords (discard blender's w term)
-                    let points_list: Vec<(f32, f32, f32)> = geometry
-                        .iter()
-                        .map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z))
-                        .collect();
-
+                    last_point = BlenderPoly::get_end_point(geometry).into_bp3();
                     event_set.add_delta_action(Motion {
                         id: 0,
                         reference: 0,
                         motion_type: 1, // polysplines are linear moves
-                        duration: move_time,
-                        points: points_list,
+                        duration: calculate_duration(&geom, MOVEMENT_SPEED).unwrap() as u32,
+                        points: geom.iter().map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z)).collect(), // Grab a xyz co-ord tuple
                     });
                 }
 
@@ -113,41 +131,11 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
                 // Keep track of the colour at the start of a given cluster
                 let mut start_colour: (usize, &Hsl) = (0, &spline.color[0]);
 
-                let mut sum_lighting_time = 0.0;
-
                 // Run through the gradient and generate planner fades between visually distinct colours
                 // this effectively 'de-dupes' the command set for gentle gradients
                 for (i, next_colour) in spline.color.iter().enumerate() {
-                    // Check if our tracked colour and this point are sufficiently visually different
-                    if distance_hsl(start_colour.1, next_colour).abs() > CLUSTER_THRESHOLD
-                        || lighting_steps < 3 && i != 0
-                    {
-                        // Calculate the duration of the interval between selected points
-                        let step_difference = i - start_colour.0;
-                        let fade_duration = step_difference as f32 * step_duration;
-
-                        // Grab and format [0,1] the colours into the delta-compatible tuple
-                        let cluster_start = delta_led_from_hsl(start_colour.1);
-                        let cluster_end = delta_led_from_hsl(next_colour);
-
-                        // Add the event to the lighting events pool
-                        event_set.add_light_action(Fade {
-                            animation_type: 1,
-                            id: 1,
-                            duration: fade_duration,
-                            points: vec![cluster_start, cluster_end],
-                        });
-
-                        // Set the 'end' of the fade to be the start of the next comparison
-                        start_colour.0 = i;
-                        start_colour.1 = next_colour;
-
-                        sum_lighting_time = sum_lighting_time + fade_duration;
-                    }
-                    // else
-                    // skip the colour because it's too similar to the tracked 'start' point
+                    start_colour = generate_visually_distinct_fade( &mut event_set, i, lighting_steps, step_duration, start_colour, (i, next_colour) );
                 }
-
 
             },
             BlenderData::NURBSSpline(spline) => {
@@ -157,19 +145,49 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
             },
             BlenderData::Particles( p) => {
 
+                // Create a movement for each particle between last and current locations with the specified 'global' colour
                 for particle in &p.particles {
 
-                    // Create a movement from last to current with the specified colour
+                    // Move to the particle's start point
+                    add_starting_move( &mut event_set, last_point, particle.prev_location.clone() );
 
+                    // We want to execute a line over the length of the particle's trail
+                    let p_line = [particle.prev_location, particle.location];
+                    let move_duration = calculate_duration(&p_line, MOVEMENT_SPEED).unwrap() as u32;
 
+                    last_point = particle.location.clone(); //retain this for use in the next loop's transit start
+
+                    event_set.add_delta_action(Motion {
+                        id: 0,
+                        reference: 0,
+                        motion_type: 1, // particle trails are linear moves
+                        duration: move_duration,
+                        points: p_line.iter().map(|p| return (p.x, p.y, p.z)).collect(),
+                    });
+
+                    let p_color = p.color.iter().map(|c| delta_led_from_hsl(c)).collect();
+                    event_set.add_light_action(Fade{
+                        animation_type: 0,
+                        id: 0,
+                        duration: move_duration as f32,
+                        points: p_color,
+                    });
                 }
 
+
+                
             }
             _ => {
                 // Unknown type. Do nothing
             }
         }
 
+
+
+    }
+
+    return event_set;
+}
 
 // The viewer preview data consists of line segments and a UV map
 pub fn generate_viewer_data(input: &Vec<BlenderData>) -> (Vec<(f32, f32, f32)>, Vec<Hsl>) {
@@ -178,26 +196,44 @@ pub fn generate_viewer_data(input: &Vec<BlenderData>) -> (Vec<(f32, f32, f32)>, 
 
     // Apply transformations to the parsed data
     for spline_to_process in input {
-        let input_spline = &spline_to_process.spline;
-        let input_colors = &spline_to_process.illumination;
+        match &spline_to_process {
+            BlenderData::PolySpline(s) => {
 
-        let (spline_type, window_size, spline_start_index, spline_finish_index) =
-            spline_type_selector(input_spline.spline_type.as_str()).unwrap();
+                // Calculate movements to follow the line/spline
+                for geometry in s.points.windows(BlenderPoly::get_recommended_window_size()) {
+                    let geom: [BlenderPoint3;2] = [geometry[0].into_bp3(), geometry[1].into_bp3() ];
 
-        // Generate a move from the end of the last spline to the start of the next spline
-        let next_point = input_spline.points[0].clone();
+                    poly_points.extend(vertex_from_spline(1, &geom));
+                }
 
-        // create transition movement
-        //        poly_points.push(blah);
+                uv_colors.extend(s.color.clone());
 
-        let mut spline_time = 0.0;
+            },
+            BlenderData::NURBSSpline(s) => {
 
+                println!("NURBS unavailable in preview...");
+                poly_points.push((0.0,0.0,0.0));
+                poly_points.push((0.0,0.0,0.0));
+                uv_colors.push( Hsl::new(0.0, 0.0, 50.0, Option::from(1.0)) );
+                uv_colors.push( Hsl::new(0.0, 0.0, 50.0, Option::from(1.0)) );
 
+            },
+            BlenderData::Particles(p) => {
+
+                println!("Particles unavailable in preview...");
+                poly_points.push((0.0,0.0,0.0));
+                poly_points.push((0.0,0.0,0.0));
+
+                uv_colors.push( Hsl::new(0.0, 0.0, 50.0, Option::from(1.0)) );
+                uv_colors.push( Hsl::new(0.0, 0.0, 50.0, Option::from(1.0)) );
+
+            },
+            _ => {
+                // Unknown type. Do nothing
+            }
+        }
 
     }
-
-    return event_set;
-}
 
     return (poly_points, uv_colors);
 }

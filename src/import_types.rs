@@ -260,4 +260,16 @@ impl BlenderTransforms for BlenderPoint4 {
         self.w += 0.0;      //ignore w term
 
     }
+
+}
+
+impl BlenderPoint4 {
+    pub fn into_bp3(self) -> BlenderPoint3
+    {
+        BlenderPoint3 {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+        }
+    }
 }
