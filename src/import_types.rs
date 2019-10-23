@@ -6,7 +6,9 @@ use serde::Deserialize;
 pub enum BlenderData {
     #[serde(rename = "poly")]
     PolySpline(BlenderPoly),
+    #[serde(rename = "nurbs")]
     NURBSSpline(BlenderNURBS),
+    #[serde(rename = "particles")]
     Particles(BlenderParticles),
 }
 
@@ -19,6 +21,12 @@ pub trait Spline {
     fn scale_points(&mut self, factor: f32);
     fn offset_points(&mut self, x_offset: f32, y_offset: f32, z_offset: f32);
 
+    // The edges of the movement (not the first or last element, as those are often control points)
+    fn get_start_point(slice: &[BlenderPoint4]) -> BlenderPoint4;
+    fn get_end_point(slice: &[BlenderPoint4]) -> BlenderPoint4;
+
+    // Size of the window to slide through the points
+    fn get_recommended_window_size() -> usize;
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -44,14 +52,29 @@ impl Spline for BlenderPoly {
     }
 
     fn scale_points(&mut self, factor: f32) {
-        self.points.iter().for_each(|mut p| p.scale(factor) );
+        for p in &mut self.points {
+            p.scale(factor)
+        }
+
         self.curve_length *= factor;
     }
 
     fn offset_points(&mut self, x_offset: f32, y_offset: f32, z_offset: f32) {
-        for mut point in self.points {
+        for point in &mut self.points {
             point.offset(x_offset, y_offset, z_offset);
         }
+    }
+
+    fn get_start_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
+        return slice[0].clone();
+    }
+
+    fn get_end_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
+        return slice[1].clone();
+    }
+
+    fn get_recommended_window_size() -> usize {
+        return 2;
     }
 
 }
@@ -82,20 +105,36 @@ impl Spline for BlenderNURBS {
     }
 
     fn scale_points(&mut self, factor: f32) {
-        self.points.iter().for_each(|mut p| p.scale(factor) );
+        for p in &mut self.points {
+            p.scale(factor)
+        }
+
         self.curve_length *= factor;
     }
 
     fn offset_points(&mut self, x_offset: f32, y_offset: f32, z_offset: f32) {
-        for mut point in self.points {
+        for point in &mut self.points {
             point.offset(x_offset, y_offset, z_offset);
         }
+    }
+
+    fn get_start_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
+        return slice[1].clone();
+    }
+
+    fn get_end_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
+        return slice[2].clone();
+    }
+
+    fn get_recommended_window_size() -> usize {
+        return 4;
     }
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct BlenderParticles {
     pub particles: Vec<BlenderParticle>,
+    #[serde(rename = "color")]
     pub color_rgba: (f32,f32,f32,f32),
 
     #[serde(skip)]
@@ -109,13 +148,27 @@ impl Spline for BlenderParticles {
     }
 
     fn scale_points(&mut self, factor: f32) {
-        self.particles.iter().for_each(|mut p| p.scale(factor) );
+        for p in &mut self.particles {
+            p.scale(factor)
+        }
     }
 
     fn offset_points(&mut self, x_offset: f32, y_offset: f32, z_offset: f32 ) {
-        for mut particle in self.particles {
+        for particle in &mut self.particles {
             particle.offset(x_offset,y_offset,z_offset);
         }
+    }
+
+    fn get_start_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
+        unimplemented!()
+    }
+
+    fn get_end_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
+        unimplemented!()
+    }
+
+    fn get_recommended_window_size() -> usize {
+        return 1;
     }
 }
 

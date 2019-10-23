@@ -15,9 +15,71 @@ pub struct EventMetadata {
 
 #[derive(Serialize, Debug)]
 pub struct ActionGroups {
-    pub delta: Vec<DeltaAction>,
-    pub light: Vec<LightAction>,
-    pub run: Vec<GenericAction>,
+    delta: Vec<DeltaAction>,
+    light: Vec<LightAction>,
+    run: Vec<GenericAction>,
+
+    #[serde(skip_serializing)]
+    global_id: u32,  // all moves, lights, extra actions need a unique global ID, as json doesn't guarantee order
+}
+
+pub trait Actions {
+    fn add_delta_action(&mut self, mut m: Motion );
+    fn add_light_action(&mut self, mut l: Fade);
+    fn add_generic_action(&mut self, a: String, p: String);
+
+    fn get_next_global_id(self) -> u32;
+}
+
+impl Actions for ActionGroups {
+    fn add_delta_action(&mut self, mut m: Motion )
+    {
+        // Set the ID for the move being added to the set
+        m.id = self.delta.len() as u32 + 1;
+
+        self.delta.push( DeltaAction {
+            id: self.global_id,
+            action: String::from("queue_movement"),
+            payload: m,
+        } );
+
+        self.global_id = self.global_id + 1;
+    }
+
+    fn add_light_action(&mut self, mut l: Fade)
+    {
+        l.id = self.light.len() as u32 + 1;
+
+        self.light.push(
+          LightAction {
+              id: self.global_id,
+              action: "queue_light".to_string(),
+              payload: l,
+              comment: "".to_string()
+          }
+        );
+
+        self.global_id = self.global_id + 1;
+    }
+
+    fn add_generic_action(&mut self, a: String, p: String)
+    {
+        self.run.push(
+            GenericAction {
+                id: self.global_id,
+                action: a,
+                payload: p,
+                comment: "".to_string(),
+                wait_for: 0,
+            }
+        );
+
+        self.global_id = self.global_id + 1;
+    }
+
+    fn get_next_global_id(self) -> u32 {
+        return self.global_id
+    }
 }
 
 #[derive(Serialize, Debug)]
