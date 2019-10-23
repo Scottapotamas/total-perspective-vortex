@@ -15,9 +15,9 @@ pub struct EventMetadata {
 
 #[derive(Serialize, Debug)]
 pub struct ActionGroups {
-    delta: Vec<DeltaAction>,
-    light: Vec<LightAction>,
-    run: Vec<GenericAction>,
+    pub delta: Vec<DeltaAction>,
+    pub light: Vec<LightAction>,
+    pub run: Vec<GenericAction>,
 
     #[serde(skip_serializing)]
     global_id: u32,  // all moves, lights, extra actions need a unique global ID, as json doesn't guarantee order

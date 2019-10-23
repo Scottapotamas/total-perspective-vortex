@@ -76,7 +76,7 @@ fn main() {
 
     let overview_file =
         serde_json::to_string_pretty(&summary).expect("Summary Serialisation Failed");
-    fs::write(Path::new("./collection/summary.json"), overview_file).expect("Unable to write file");
+    fs::write(Path::new("./summary.json"), overview_file).expect("Unable to write file");
 }
 
 // From a valid frame folder, find collections folders to process
@@ -138,9 +138,11 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
 
     // Take our spline+illumination data, and generate a tool-path
     let planned_events = generate_delta_toolpath(&parsed_splines);
+
+    // Generate additional exports for use in the UI as previz data
     let viewer_preview = generate_viewer_data(&parsed_splines);
 
-    let file_duration: u32 = planned_events
+    let duration: u32 = planned_events
         .delta
         .iter()
         .map(|x| x.payload.duration)
@@ -149,7 +151,7 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
     let first_move = planned_events.delta.first().unwrap().payload.id;
     let last_move = planned_events.delta.last().unwrap().payload.id;
 
-    let num_lights = planned_events.light.len();
+    let num_lights = planned_events.light.len() as u32;
     // Add header information
     let output_data: DeltaEvents = DeltaEvents {
         metadata: generate_header(String::from("VortexFile")),
@@ -193,10 +195,10 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
     let metadata = FileMetadata {
         name: collection_name,
         toolpath_path: pathbuf_to_string(delta_path),
-        duration: file_duration,
-        first_move: first_move,
-        last_move: last_move,
-        num_lights: num_lights as u32,
+        duration,
+        first_move,
+        last_move,
+        num_lights,
         viewer_vertices_path: pathbuf_to_string(vertex_path),
         viewer_uv_path: pathbuf_to_string(uv_path),
     };
