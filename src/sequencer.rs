@@ -30,20 +30,16 @@ fn spline_type_selector(spline_type: &str) -> Option<(u32, usize, usize, usize)>
 }
 
 // Generate a move between A and B
-fn move_between(a: BlenderPoint4, b: BlenderPoint4, speed: f32) -> Option<DeltaAction> {
+fn move_between(a: BlenderPoint4, b: BlenderPoint4, speed: f32) -> Option<Motion> {
     if a != b {
         // Generate transit move instead of requiring a start from home
         if a.x == 0.0 && a.y == 0.0 && a.z == 0.0 {
-            return Some(DeltaAction {
-                id: 0,
-                action: String::from("queue_movement"),
-                payload: Motion {
+            return Some(Motion {
                     id: 0,
                     reference: 0,
                     motion_type: 0,
                     duration: 500,
                     points: vec![(b.x, b.y, b.z)],
-                },
             });
         }
 
@@ -51,18 +47,15 @@ fn move_between(a: BlenderPoint4, b: BlenderPoint4, speed: f32) -> Option<DeltaA
             .iter()
             .map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z))
             .collect();
+
         let transit_duration = calculate_duration(&[a, b], speed).unwrap() as u32;
 
-        return Some(DeltaAction {
-            id: 0,
-            action: String::from("queue_movement"),
-            payload: Motion {
+        return Some( Motion {
                 id: 0,
                 reference: 0,
                 motion_type: 1,
                 duration: transit_duration,
                 points: transit_points,
-            },
         });
     } else {
         return None;
@@ -71,10 +64,8 @@ fn move_between(a: BlenderPoint4, b: BlenderPoint4, speed: f32) -> Option<DeltaA
 
 pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
     // A delta-ready toolpath file has sets of events grouped by device (delta, led light, cameras etc).
-    let mut movement_events: Vec<DeltaAction> = Vec::new();
-    let mut lighting_events: Vec<LightAction> = Vec::new();
-    let mut additional_steps: Vec<GenericAction> = Vec::new();
-
+    let mut event_set: ActionGroups;
+    
     let mut last_point: BlenderPoint4 = BlenderPoint4 {
         x: 0.0,
         y: 0.0,
@@ -170,18 +161,11 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
                 let cluster_end = delta_led_from_hsl(next_colour);
 
                 // Add the event to the lighting events pool
-                let fade = LightAnimation {
+                event_set.add_light_action(Fade {
                     animation_type: 1,
                     id: 1,
                     duration: fade_duration,
                     points: vec![cluster_start, cluster_end],
-                };
-
-                lighting_events.push(LightAction {
-                    id: 0,
-                    action: "queue_light".to_string(),
-                    payload: fade,
-                    comment: "".to_string(),
                 });
 
                 // Set the 'end' of the fade to be the start of the next comparison
@@ -195,36 +179,11 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
         }
     }
 
-    // Assign all the moves, lights, extra actions a unique global ID, as json doesn't guarantee order
-    let mut event_identifier = 0;
-
-    movement_events.iter_mut().for_each(|movement| {
-        movement.id = event_identifier;
-        event_identifier += 1;
-    });
-
-    lighting_events.iter_mut().for_each(|illumination| {
-        illumination.id = event_identifier;
-        event_identifier += 1;
-    });
-
-    additional_steps.iter_mut().for_each(|generic| {
-        generic.id = event_identifier;
-        event_identifier += 1;
-    });
-
-    // Prepare the data for export
-    let event_set = ActionGroups {
-        delta: movement_events,
-        light: lighting_events,
-        run: additional_steps,
-    };
-
     return event_set;
 }
 
 // The viewer preview data consists of line segments and a UV map
-pub fn generate_viewer_data(input: &Vec<IlluminatedSpline>) -> (Vec<(f32, f32, f32)>, Vec<Hsl>) {
+pub fn generate_viewer_data(input: &Vec<BlenderData>) -> (Vec<(f32, f32, f32)>, Vec<Hsl>) {
     let mut poly_points = vec![];
     let mut uv_colors = vec![];
 

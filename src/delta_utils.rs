@@ -86,11 +86,6 @@ pub fn calculate_duration(points: &[BlenderPoint4], speed: f32) -> Result<f32, S
 
     let duration = (distance / speed) * 1000.0; // in milliseconds
 
-    //    println!(
-    //        "Effector will take {} seconds to travel {} mm at {} mm/sec",
-    //        duration, distance, speed
-    //    );
-
     Ok(duration)
 }
 
