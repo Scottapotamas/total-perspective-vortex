@@ -65,7 +65,7 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
             p.offset_points(0.0,0.0,BLENDER_Z_OFFSET_MILLIMETERS);
 
-            let rgb = Rgb::from(&(p.color_rgba.0 as f64, p.color_rgba.1 as f64, p.color_rgba.2 as f64));
+            let rgb = Rgb::from(&(p.color_rgba.0 as f64 * 255.0, p.color_rgba.1 as f64 * 255.0, p.color_rgba.2 as f64 * 255.0));
             let hsl = Hsl::from(&rgb);
             p.color = vec![hsl; 1];
 
