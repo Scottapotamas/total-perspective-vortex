@@ -64,7 +64,7 @@ fn add_starting_move( events: &mut ActionGroups , a: BlenderPoint3, b: BlenderPo
 // Generates lighting 'fade' events between the (expanding until visually different) edges of the colour vector slice
 fn generate_visually_distinct_fade<'a>( events: &mut ActionGroups, i: usize, steps: usize, duration:f32, start_colour: (usize, &'a Hsl), next_colour: (usize, &'a Hsl),  ) -> (usize, &'a Hsl)
 {
-    if distance_hsl(start_colour.1, next_colour.1).abs() > CLUSTER_THRESHOLD || steps < 3 && i != 0
+    if distance_hsl(start_colour.1, next_colour.1).abs() > CLUSTER_THRESHOLD || steps < 3 || i == steps && i != 0
     {
         // Calculate the duration of the interval between selected points
         let step_difference = i - start_colour.0;
