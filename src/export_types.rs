@@ -21,21 +21,45 @@ pub struct ActionGroups {
 
     #[serde(skip_serializing)]
     global_id: u32,  // all moves, lights, extra actions need a unique global ID, as json doesn't guarantee order
+
+    #[serde(skip_serializing)]
+    move_time: u32,
+
 }
 
 pub trait Actions {
+    fn new() -> ActionGroups;
+
     fn add_delta_action(&mut self, mut m: Motion );
     fn add_light_action(&mut self, mut l: Fade);
     fn add_generic_action(&mut self, a: String, p: String);
 
-    fn get_next_global_id(self) -> u32;
+    fn get_next_global_id(&self) -> u32;
+    fn get_movement_duration(&self) -> u32;
 }
 
 impl Actions for ActionGroups {
+
+    fn new() -> ActionGroups {
+        ActionGroups{
+            delta: vec![],
+            light: vec![],
+            run: vec![],
+            global_id: 0,
+            move_time: 0,
+        }
+    }
+
     fn add_delta_action(&mut self, mut m: Motion )
     {
         // Set the ID for the move being added to the set
         m.id = self.delta.len() as u32 + 1;
+
+        // Accumulate movement time (don't count transit moves)
+        if m.motion_type != 0
+        {
+            self.move_time += m.duration;
+        }
 
         self.delta.push( DeltaAction {
             id: self.global_id,
@@ -77,9 +101,14 @@ impl Actions for ActionGroups {
         self.global_id = self.global_id + 1;
     }
 
-    fn get_next_global_id(self) -> u32 {
+    fn get_next_global_id(&self) -> u32 {
         return self.global_id
     }
+
+    fn get_movement_duration(&self) -> u32 {
+        return self.move_time
+    }
+
 }
 
 #[derive(Serialize, Debug)]
@@ -87,8 +116,6 @@ pub struct DeltaAction {
     pub id: u32,
     pub action: String,
     pub payload: Motion,
-    //    #[serde(skip_serializing_if = "is_null")]
-    //    waitFor: u32,
 }
 
 #[derive(Serialize, Debug)]
@@ -105,14 +132,12 @@ pub struct Motion {
 pub struct LightAction {
     pub id: u32,
     pub action: String,
-    pub payload: LightAnimation,
+    pub payload: Fade,
     pub comment: String,
-    //    #[serde(skip_serializing_if = "is_null")]
-    //    waitFor: u32,
 }
 
 #[derive(Serialize, Debug)]
-pub struct LightAnimation {
+pub struct Fade {
     #[serde(rename = "type")]
     pub animation_type: u32,
     pub id: u32,
