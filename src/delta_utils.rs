@@ -1,4 +1,5 @@
 use crate::import_types::*;
+use std::f32::{MAX};
 
 // Calculate the 3D distance in mm between two points
 fn distance_3d(a: &BlenderPoint3, b: &BlenderPoint3) -> f32 {
@@ -85,9 +86,9 @@ pub fn calculate_duration(points: &[BlenderPoint3], speed: f32) -> Result<f32, S
 
     let mut duration = (distance / speed) * 1000.0; // in milliseconds
 
-    if duration < 30.0
+    if duration < 15.0
     {
-        duration = 30.0;
+        duration = 15.0;
     }
 
     Ok(duration)
@@ -117,3 +118,44 @@ pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint3]) -> Vec<(
 
     return points_list;
 }
+
+pub fn sort_particles(particle_system : &BlenderParticles) -> Vec<BlenderParticle> {
+    let ps = particle_system.clone();
+
+    let mut particles = ps.particles;
+
+    let mut new_particles = vec![];
+
+    let original = particles.pop().expect("No particles");
+
+    new_particles.push(original);
+
+    loop {
+        if particles.len() == 0 {
+            break
+        }
+
+        let mut closest_point = None;
+        let mut closest_dist = MAX;
+        let mut closest_index = 0;
+
+        for (i,p) in particles.iter().enumerate() {
+            let dist = distance_3d(&original.location, &p.location);
+
+            if dist < closest_dist {
+                closest_dist = dist;
+                closest_point = Some(p);
+                closest_index = i;
+            }
+        }
+
+        if closest_point != None {
+            new_particles.push(*closest_point.unwrap());
+
+            particles.remove(closest_index);
+        }
+    }
+
+    return new_particles;
+}
+
