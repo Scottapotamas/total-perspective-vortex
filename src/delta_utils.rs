@@ -119,43 +119,39 @@ pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint3]) -> Vec<(
     return points_list;
 }
 
-pub fn sort_particles(particle_system : &BlenderParticles) -> Vec<BlenderParticle> {
-    let ps = particle_system.clone();
+// Sort the particles into a chain of next-nearest distances to reduce the traversal distance for particle systems
+// Very naiive approach - TODO solve travelling salesman problem!
+pub fn sort_particles(particles : &mut Vec<BlenderParticle>) -> Vec<BlenderParticle> {
 
-    let mut particles = ps.particles;
+    let mut sorted_particles = vec![];
+    sorted_particles.reserve(particles.len());
 
-    let mut new_particles = vec![];
+    // Randomly pick a starting point, Non-deterministic pathing through the particle cloud is desirable
+    // as it should 'fuzz' any artifacts influenced by transit moves.
+    let random_start = (rand::random::<f32>() * particles.len() as f32).floor() as usize;
+    sorted_particles.push(particles.remove( random_start ));
 
-    let original = particles.pop().expect("No particles");
-
-    new_particles.push(original);
-
-    loop {
-        if particles.len() == 0 {
-            break
-        }
-
-        let mut closest_point = None;
+    while !particles.is_empty() {
         let mut closest_dist = MAX;
-        let mut closest_index = 0;
+        let mut closest_index = None;
+        let check_p = sorted_particles.last().unwrap(); // search from the most recent sorted point
 
-        for (i,p) in particles.iter().enumerate() {
-            let dist = distance_3d(&original.location, &p.location);
+        for (i, search_p) in particles.iter().enumerate() {
+            let dist = distance_3d(&check_p.location, &search_p.location);
 
             if dist < closest_dist {
                 closest_dist = dist;
-                closest_point = Some(p);
-                closest_index = i;
+                closest_index = Some(i);
             }
         }
 
-        if closest_point != None {
-            new_particles.push(*closest_point.unwrap());
-
-            particles.remove(closest_index);
+        // Take the closest point from this search pass, and move it into the sorted vector
+        if closest_index.is_some() {
+            sorted_particles.push(particles.remove(closest_index.unwrap()) );
         }
+
     }
 
-    return new_particles;
+    return sorted_particles;
 }
 
