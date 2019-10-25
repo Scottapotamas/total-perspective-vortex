@@ -61,6 +61,27 @@ fn add_starting_move( events: &mut ActionGroups , a: BlenderPoint3, b: BlenderPo
     }
 }
 
+fn add_delay( events: &mut ActionGroups, time: u32)
+{
+    // Abuse the relative movement to move 'zero distance' over time
+    events.add_delta_action( Motion {
+        motion_type: 0,
+        reference: 1,
+        id: 0,
+        duration: time,
+        points: vec![(0.0, 0.0, 0.0)]
+    } );
+
+    // Also add an equal duration lighting event
+    events.add_light_action( Fade {
+        animation_type: 1,
+        id: 0,
+        duration: time as f32,
+        points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
+    } );
+
+}
+
 // Generates lighting 'fade' events between the (expanding until visually different) edges of the colour vector slice
 fn generate_visually_distinct_fade<'a>( events: &mut ActionGroups, i: usize, steps: usize, duration:f32, start_colour: (usize, &'a Hsl), next_colour: (usize, &'a Hsl),  ) -> (usize, &'a Hsl)
 {
@@ -156,6 +177,8 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
                     let move_duration = calculate_duration(&p_line, MOVEMENT_SPEED).unwrap() as u32;
 
                     last_point = particle.location.clone(); //retain this for use in the next loop's transit start
+
+                    add_delay(&mut event_set,10);
 
                     event_set.add_delta_action(Motion {
                         id: 0,
