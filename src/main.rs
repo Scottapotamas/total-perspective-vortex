@@ -92,6 +92,8 @@ fn process_frame_folder(entry: &DirEntry) -> FrameMetadata {
         .filter_entry(|e| e.file_type().is_dir())
         .filter_map(|v| v.ok())
         .map(|x| process_collection(&x))
+        .filter(|y| y.is_some())
+        .map(|z| z.unwrap())
         .collect();
 
     return FrameMetadata {
@@ -125,7 +127,7 @@ struct FileMetadata {
 }
 
 // A collection is the deepest level folder. Contains json and (optional) uv files from Blender
-fn process_collection(entry: &DirEntry) -> FileMetadata {
+fn process_collection(entry: &DirEntry) -> Option<FileMetadata> {
     // Parse all the json files in the current directory
     let parsed_splines: Vec<BlenderData> = WalkDir::new(entry.path())
         .min_depth(1)
@@ -135,6 +137,11 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         .filter_map(|v| v.ok())
         .map(|x| load_blender_data(&x.path()))
         .collect();
+
+    if parsed_splines.len() == 0
+    {
+        return None;
+    }
 
     // Take our spline+illumination data, and generate a tool-path
     let planned_events = generate_delta_toolpath(&parsed_splines);
@@ -148,8 +155,8 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         .map(|x| x.payload.duration)
         .sum();
 
-    let first_move = planned_events.delta.first().unwrap().payload.id;
-    let last_move = planned_events.delta.last().unwrap().payload.id;
+    let first_move = planned_events.delta.first().expect("No first move").payload.id;
+    let last_move = planned_events.delta.last().expect("No last move").payload.id;
 
     let num_lights = planned_events.light.len() as u32;
     // Add header information
@@ -203,7 +210,7 @@ fn process_collection(entry: &DirEntry) -> FileMetadata {
         viewer_uv_path: pathbuf_to_string(uv_path),
     };
 
-    return metadata;
+    return Some(metadata);
 }
 
 fn pathbuf_to_string(input: PathBuf) -> String {
