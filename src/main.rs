@@ -29,10 +29,10 @@ fn is_frame_folder(entry: &DirEntry) -> bool {
         entry
             .file_name()
             .to_str()
-            .map(|s| !s.starts_with(".") && !s.starts_with("__"))
+            .map(|s| !s.starts_with('.') && !s.starts_with("__"))
             .unwrap_or(false)
     } else {
-        return false;
+        false
     }
 }
 
@@ -81,7 +81,7 @@ fn main() {
 
 // From a valid frame folder, find collections folders to process
 fn process_frame_folder(entry: &DirEntry) -> FrameMetadata {
-    let frame_folder_name = format!("{}", entry.file_name().to_str().unwrap());
+    let frame_folder_name = entry.file_name().to_string_lossy();
     let frame_number = frame_folder_name.parse::<i32>().unwrap();
     println!("\nProcessing Frame {}", frame_folder_name);
 
@@ -96,10 +96,10 @@ fn process_frame_folder(entry: &DirEntry) -> FrameMetadata {
         .map(|z| z.unwrap())
         .collect();
 
-    return FrameMetadata {
+    FrameMetadata {
         frame_num: frame_number,
         collections: exported_file_metadata,
-    };
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -138,13 +138,18 @@ fn process_collection(entry: &DirEntry) -> Option<FileMetadata> {
         .map(|x| load_blender_data(&x.path()))
         .collect();
 
-    if parsed_splines.len() == 0
+    if parsed_splines.is_empty()
     {
         return None;
     }
 
     // Take our spline+illumination data, and generate a tool-path
     let planned_events = generate_delta_toolpath(&parsed_splines);
+
+    if planned_events.delta.is_empty()
+    {
+        return None;
+    }
 
     // Generate additional exports for use in the UI as previz data
     let viewer_preview = generate_viewer_data(&parsed_splines);
@@ -199,7 +204,7 @@ fn process_collection(entry: &DirEntry) -> Option<FileMetadata> {
     export_vertices(&vertex_path.as_path(), viewer_preview.0);
     export_uv(&uv_path.as_path(), viewer_preview.1);
 
-    let metadata = FileMetadata {
+    Some(FileMetadata {
         name: collection_name,
         toolpath_path: pathbuf_to_string(delta_path),
         duration,
@@ -208,9 +213,7 @@ fn process_collection(entry: &DirEntry) -> Option<FileMetadata> {
         num_lights,
         viewer_vertices_path: pathbuf_to_string(vertex_path),
         viewer_uv_path: pathbuf_to_string(uv_path),
-    };
-
-    return Some(metadata);
+    })
 }
 
 fn pathbuf_to_string(input: PathBuf) -> String {
@@ -226,7 +229,6 @@ fn format_filename(destination: &Path, name: String, extension: String) -> PathB
     let file_name = format!("{}_{}", collection_name, extension);
     let path = Path::new(&file_name);
     let parent_folder = destination.clone();
-    let location = parent_folder.join(&path);
 
-    return location;
+    parent_folder.join(&path)
 }

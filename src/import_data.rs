@@ -78,7 +78,7 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
 
     // TODO work out how to put close_loop(), scale_points(), and offset_points() here once, rather than requiring type-based incantation
 
-    return blender_data;
+    blender_data
 }
 
 fn load_uv(input_path: &Path) -> Result<DynamicImage, image::ImageError> {
@@ -108,7 +108,7 @@ fn convert_uv(image: DynamicImage) -> Vec<Hsl> {
         })
         .collect();
 
-    return hue_list;
+    hue_list
 }
 
 // Create a fallback white fade pair to provide lighting on moves which didn't have a valid UV map provided.

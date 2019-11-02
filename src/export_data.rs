@@ -9,10 +9,10 @@ use image::imageops::resize;
 use image::{FilterType, ImageBuffer, Rgb, RgbImage};
 
 pub fn generate_header(title: String) -> EventMetadata {
-    return EventMetadata {
+    EventMetadata {
         format_version: String::from("0.0.1"),
         name: title,
-    };
+    }
 }
 
 pub fn export_toolpath(write_path: &Path, data: DeltaEvents) {
@@ -54,5 +54,5 @@ fn next_power_two(input: u32) -> u32 {
             return p2;
         }
     }
-    return 4096;
+    4096
 }

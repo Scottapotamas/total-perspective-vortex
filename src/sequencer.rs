@@ -15,7 +15,7 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
     if a != b {
         // Generate transit move instead of requiring a start from home
         if a.x == 0.0 && a.y == 0.0 && a.z == 0.0 {
-            return Some(Motion {
+            Some(Motion {
                     id: 0,
                     reference: 0,
                     motion_type: 0,
@@ -26,20 +26,20 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
 
         let transit_points: Vec<(f32, f32, f32)> = vec![a, b]
             .iter()
-            .map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z))
+            .map(|bpoint| (bpoint.x, bpoint.y, bpoint.z))
             .collect();
 
         let transit_duration = calculate_duration(&[a, b], speed).unwrap() as u32;
 
-        return Some( Motion {
+        Some( Motion {
                 id: 0,
                 reference: 0,
                 motion_type: 1,
                 duration: transit_duration,
                 points: transit_points,
-        });
+        })
     } else {
-        return None;
+        None
     }
 }
 
@@ -110,7 +110,7 @@ fn generate_visually_distinct_fade<'a>( events: &mut ActionGroups, i: usize, ste
     return start_colour;
 }
 
-pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
+pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
     // A delta-ready toolpath file has sets of events grouped by device (delta, led light, cameras etc).
     let mut event_set = ActionGroups::new();
     
@@ -128,20 +128,21 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
             BlenderData::PolySpline(spline) => {
 
                 // Generate a move from the end of the last spline to the start of the next spline
-                add_starting_move( &mut event_set, last_point, spline.points[0].clone().into_bp3() );
+                add_starting_move( &mut event_set, last_point, spline.points[0].into_bp3() );
 
                 // Polysplines are a chain of lines, a line consists of a pair of BlenderPoint co-ordinates
                 for geometry in spline.points.windows(BlenderPoly::get_recommended_window_size()) {
 
                     let geom: [BlenderPoint3;2] = [geometry[0].into_bp3(), geometry[1].into_bp3() ];
 
+                    let duration = calculate_duration(&geom, MOVEMENT_SPEED).unwrap() as u32;
                     last_point = BlenderPoly::get_end_point(geometry).into_bp3();
                     event_set.add_delta_action(Motion {
                         id: 0,
                         reference: 0,
                         motion_type: 1, // polysplines are linear moves
-                        duration: calculate_duration(&geom, MOVEMENT_SPEED).unwrap() as u32,
-                        points: geom.iter().map(|bpoint| return (bpoint.x, bpoint.y, bpoint.z)).collect(), // Grab a xyz co-ord tuple
+                        duration,
+                        points: geom.iter().map(|bpoint| (bpoint.x, bpoint.y, bpoint.z)).collect(), // Grab a xyz co-ord tuple
                     });
                 }
 
@@ -170,22 +171,22 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
                 for particle in &p.particles {
 
                     // Move to the particle's start point
-                    add_starting_move( &mut event_set, last_point, particle.prev_location.clone() );
+                    add_starting_move( &mut event_set, last_point, particle.prev_location );
 
                     // We want to execute a line over the length of the particle's trail
                     let p_line = [particle.prev_location, particle.location];
                     let move_duration = calculate_duration(&p_line, MOVEMENT_SPEED).unwrap() as u32;
 
-                    last_point = particle.location.clone(); //retain this for use in the next loop's transit start
+                    last_point = particle.location; //retain this for use in the next loop's transit start
 
-                    add_delay(&mut event_set,10);
+                    add_delay(&mut event_set,50);
 
                     event_set.add_delta_action(Motion {
                         id: 0,
                         reference: 0,
                         motion_type: 1, // particle trails are linear moves
                         duration: move_duration,
-                        points: p_line.iter().map(|p| return (p.x, p.y, p.z)).collect(),
+                        points: p_line.iter().map(|p| (p.x, p.y, p.z)).collect(),
                     });
 
                     let p_color = p.color.iter().map(|c| delta_led_from_hsl(c)).collect();
@@ -200,20 +201,15 @@ pub fn generate_delta_toolpath(input: &Vec<BlenderData>) -> ActionGroups {
 
                 
             }
-            _ => {
-                // Unknown type. Do nothing
-            }
         }
-
-
 
     }
 
-    return event_set;
+    event_set
 }
 
 // The viewer preview data consists of line segments and a UV map
-pub fn generate_viewer_data(input: &Vec<BlenderData>) -> (Vec<(f32, f32, f32)>, Vec<Hsl>) {
+pub fn generate_viewer_data(input: &[BlenderData]) -> (Vec<(f32, f32, f32)>, Vec<Hsl>) {
     let mut poly_points = vec![];
     let mut uv_colors = vec![];
 
@@ -251,12 +247,9 @@ pub fn generate_viewer_data(input: &Vec<BlenderData>) -> (Vec<(f32, f32, f32)>, 
                 uv_colors.push( Hsl::new(0.0, 0.0, 50.0, Option::from(1.0)) );
 
             },
-            _ => {
-                // Unknown type. Do nothing
-            }
         }
 
     }
 
-    return (poly_points, uv_colors);
+    (poly_points, uv_colors)
 }
