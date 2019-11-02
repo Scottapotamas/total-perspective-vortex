@@ -13,7 +13,6 @@ pub enum BlenderData {
 }
 
 pub trait Spline {
-
     fn close_loop(&mut self) {
         // optional - particle systems don't have loops
     }
@@ -43,11 +42,10 @@ pub struct BlenderPoly {
 }
 
 impl Spline for BlenderPoly {
-
     fn close_loop(&mut self) {
         if self.cyclic {
             // Put the first point at the end of the set
-            self.points.push( self.points.first().unwrap().clone() );
+            self.points.push(self.points.first().unwrap().clone());
         }
     }
 
@@ -76,7 +74,6 @@ impl Spline for BlenderPoly {
     fn get_recommended_window_size() -> usize {
         2
     }
-
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -93,14 +90,12 @@ pub struct BlenderNURBS {
 }
 
 impl Spline for BlenderNURBS {
-
     fn close_loop(&mut self) {
         if self.cyclic {
             // Put the first two points at the end of the set
             self.points.push(self.points[0]);
             self.points.push(self.points[1]);
             self.points.push(self.points[2]);
-
         }
     }
 
@@ -135,14 +130,13 @@ impl Spline for BlenderNURBS {
 pub struct BlenderParticles {
     pub particles: Vec<BlenderParticle>,
     #[serde(rename = "color")]
-    pub color_rgba: (f32,f32,f32,f32),
+    pub color_rgba: (f32, f32, f32, f32),
 
     #[serde(skip)]
     pub color: Vec<Hsl>,
 }
 
 impl Spline for BlenderParticles {
-
     fn close_loop(&mut self) {
         unimplemented!();
     }
@@ -153,9 +147,9 @@ impl Spline for BlenderParticles {
         }
     }
 
-    fn offset_points(&mut self, x_offset: f32, y_offset: f32, z_offset: f32 ) {
+    fn offset_points(&mut self, x_offset: f32, y_offset: f32, z_offset: f32) {
         for particle in &mut self.particles {
-            particle.offset(x_offset,y_offset,z_offset);
+            particle.offset(x_offset, y_offset, z_offset);
         }
     }
 
@@ -171,8 +165,6 @@ impl Spline for BlenderParticles {
         1
     }
 }
-
-
 
 pub trait BlenderTransforms {
     fn scale(&mut self, factor: f32);
@@ -204,17 +196,16 @@ impl BlenderTransforms for BlenderParticle {
     }
 
     fn offset(&mut self, x_offset: f32, y_offset: f32, z_offset: f32) {
-        self.location.offset(x_offset,y_offset,z_offset);
-        self.prev_location.offset(x_offset,y_offset,z_offset);
+        self.location.offset(x_offset, y_offset, z_offset);
+        self.prev_location.offset(x_offset, y_offset, z_offset);
 
-        self.velocity.offset(x_offset,y_offset,z_offset);
-        self.prev_velocity.offset(x_offset,y_offset,z_offset);
+        self.velocity.offset(x_offset, y_offset, z_offset);
+        self.prev_velocity.offset(x_offset, y_offset, z_offset);
 
-        self.rotation.offset(x_offset,y_offset,z_offset);
-        self.prev_rotation.offset(x_offset,y_offset,z_offset);
+        self.rotation.offset(x_offset, y_offset, z_offset);
+        self.prev_rotation.offset(x_offset, y_offset, z_offset);
     }
 }
-
 
 #[derive(Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct BlenderPoint3 {
@@ -242,7 +233,7 @@ pub struct BlenderPoint4 {
     pub x: f32,
     pub y: f32,
     pub z: f32,
-    pub w: f32,     // not currently used/implemented
+    pub w: f32, // not currently used/implemented
 }
 
 impl BlenderTransforms for BlenderPoint4 {
@@ -250,22 +241,19 @@ impl BlenderTransforms for BlenderPoint4 {
         self.x *= factor;
         self.y *= factor;
         self.z *= factor;
-        self.w *= 1.0;    //ignore w term
+        self.w *= 1.0; //ignore w term
     }
 
     fn offset(&mut self, x_offset: f32, y_offset: f32, z_offset: f32) {
         self.x += x_offset;
         self.y += y_offset;
         self.z += z_offset;
-        self.w += 0.0;      //ignore w term
-
+        self.w += 0.0; //ignore w term
     }
-
 }
 
 impl BlenderPoint4 {
-    pub fn into_bp3(self) -> BlenderPoint3
-    {
+    pub fn into_bp3(self) -> BlenderPoint3 {
         BlenderPoint3 {
             x: self.x,
             y: self.y,

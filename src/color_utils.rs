@@ -28,19 +28,19 @@ pub fn distance_hsl(x: &Hsl, y: &Hsl) -> f64 {
 }
 
 pub fn delta_led_from_hsl(color: &Hsl) -> (f32, f32, f32) {
-    return (
+    (
         color.get_hue() as f32 / 360.0,
         color.get_saturation() as f32 / 100.0,
         color.get_lightness() as f32 / 100.0,
-    );
+    )
 }
 
 pub fn hsl_to_rgb8(color: &Hsl) -> (u8, u8, u8) {
     let rgb = Rgb::from(color);
 
-    return (
+    (
         rgb.get_red() as u8,
         rgb.get_green() as u8,
         rgb.get_blue() as u8,
-    );
+    )
 }
