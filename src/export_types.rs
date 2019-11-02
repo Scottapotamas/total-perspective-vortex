@@ -67,7 +67,7 @@ impl Actions for ActionGroups {
             payload: m,
         } );
 
-        self.global_id = self.global_id + 1;
+        self.global_id += 1;
     }
 
     fn add_light_action(&mut self, mut l: Fade)
@@ -83,7 +83,7 @@ impl Actions for ActionGroups {
           }
         );
 
-        self.global_id = self.global_id + 1;
+        self.global_id += 1;
     }
 
     fn add_generic_action(&mut self, a: String, p: String)
@@ -98,15 +98,15 @@ impl Actions for ActionGroups {
             }
         );
 
-        self.global_id = self.global_id + 1;
+        self.global_id += 1;
     }
 
     fn get_next_global_id(&self) -> u32 {
-        return self.global_id
+        self.global_id
     }
 
     fn get_movement_duration(&self) -> u32 {
-        return self.move_time
+        self.move_time
     }
 
 }

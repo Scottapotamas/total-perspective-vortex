@@ -66,15 +66,15 @@ impl Spline for BlenderPoly {
     }
 
     fn get_start_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
-        return slice[0].clone();
+        slice[0]
     }
 
     fn get_end_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
-        return slice[1].clone();
+        slice[1]
     }
 
     fn get_recommended_window_size() -> usize {
-        return 2;
+        2
     }
 
 }
@@ -97,9 +97,9 @@ impl Spline for BlenderNURBS {
     fn close_loop(&mut self) {
         if self.cyclic {
             // Put the first two points at the end of the set
-            self.points.push(self.points[0].clone());
-            self.points.push(self.points[1].clone());
-            self.points.push(self.points[2].clone());
+            self.points.push(self.points[0]);
+            self.points.push(self.points[1]);
+            self.points.push(self.points[2]);
 
         }
     }
@@ -119,15 +119,15 @@ impl Spline for BlenderNURBS {
     }
 
     fn get_start_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
-        return slice[1].clone();
+        slice[1]
     }
 
     fn get_end_point(slice: &[BlenderPoint4]) -> BlenderPoint4 {
-        return slice[2].clone();
+        slice[2]
     }
 
     fn get_recommended_window_size() -> usize {
-        return 4;
+        4
     }
 }
 
@@ -168,7 +168,7 @@ impl Spline for BlenderParticles {
     }
 
     fn get_recommended_window_size() -> usize {
-        return 1;
+        1
     }
 }
 

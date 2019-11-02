@@ -8,7 +8,7 @@ fn distance_3d(a: &BlenderPoint3, b: &BlenderPoint3) -> f32 {
     let dz = a.z - b.z;
     let distance = ((dx * dx) + (dy * dy) + (dz * dz)).sqrt();
 
-    return distance.abs();
+    distance.abs()
 }
 
 pub fn interpolate_catmull_point(p: &[BlenderPoint3], weight: f32) -> Result<BlenderPoint3, String> {
@@ -86,9 +86,9 @@ pub fn calculate_duration(points: &[BlenderPoint3], speed: f32) -> Result<f32, S
 
     let mut duration = (distance / speed) * 1000.0; // in milliseconds
 
-    if duration < 15.0
+    if duration < 10.0 && duration != 0.0
     {
-        duration = 15.0;
+        duration = 10.0;
     }
 
     Ok(duration)
@@ -116,7 +116,7 @@ pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint3]) -> Vec<(
         _ => println!("Error generating preview vertices for unknown spline type"),
     }
 
-    return points_list;
+    points_list
 }
 
 // Sort the particles into a chain of next-nearest distances to reduce the traversal distance for particle systems

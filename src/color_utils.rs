@@ -24,7 +24,7 @@ pub fn distance_hsl(x: &Hsl, y: &Hsl) -> f64 {
 
     // Simple cartesian distance
     let d2 = (a1 - a2).powi(2) + (b1 - b2).powi(2) + (c1 - c2).powi(2);
-    return d2.sqrt();
+    d2.sqrt()
 }
 
 pub fn delta_led_from_hsl(color: &Hsl) -> (f32, f32, f32) {
