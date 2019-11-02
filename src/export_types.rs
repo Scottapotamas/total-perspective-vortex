@@ -20,17 +20,16 @@ pub struct ActionGroups {
     pub run: Vec<GenericAction>,
 
     #[serde(skip_serializing)]
-    global_id: u32,  // all moves, lights, extra actions need a unique global ID, as json doesn't guarantee order
+    global_id: u32, // all moves, lights, extra actions need a unique global ID, as json doesn't guarantee order
 
     #[serde(skip_serializing)]
     move_time: u32,
-
 }
 
 pub trait Actions {
     fn new() -> ActionGroups;
 
-    fn add_delta_action(&mut self, mut m: Motion );
+    fn add_delta_action(&mut self, mut m: Motion);
     fn add_light_action(&mut self, mut l: Fade);
     fn add_generic_action(&mut self, a: String, p: String);
 
@@ -39,9 +38,8 @@ pub trait Actions {
 }
 
 impl Actions for ActionGroups {
-
     fn new() -> ActionGroups {
-        ActionGroups{
+        ActionGroups {
             delta: vec![],
             light: vec![],
             run: vec![],
@@ -50,53 +48,45 @@ impl Actions for ActionGroups {
         }
     }
 
-    fn add_delta_action(&mut self, mut m: Motion )
-    {
+    fn add_delta_action(&mut self, mut m: Motion) {
         // Set the ID for the move being added to the set
         m.id = self.delta.len() as u32 + 1;
 
         // Accumulate movement time (don't count transit moves)
-        if m.motion_type != 0
-        {
+        if m.motion_type != 0 {
             self.move_time += m.duration;
         }
 
-        self.delta.push( DeltaAction {
+        self.delta.push(DeltaAction {
             id: self.global_id,
             action: String::from("queue_movement"),
             payload: m,
-        } );
+        });
 
         self.global_id += 1;
     }
 
-    fn add_light_action(&mut self, mut l: Fade)
-    {
+    fn add_light_action(&mut self, mut l: Fade) {
         l.id = self.light.len() as u32 + 1;
 
-        self.light.push(
-          LightAction {
-              id: self.global_id,
-              action: "queue_light".to_string(),
-              payload: l,
-              comment: "".to_string()
-          }
-        );
+        self.light.push(LightAction {
+            id: self.global_id,
+            action: "queue_light".to_string(),
+            payload: l,
+            comment: "".to_string(),
+        });
 
         self.global_id += 1;
     }
 
-    fn add_generic_action(&mut self, a: String, p: String)
-    {
-        self.run.push(
-            GenericAction {
-                id: self.global_id,
-                action: a,
-                payload: p,
-                comment: "".to_string(),
-                wait_for: 0,
-            }
-        );
+    fn add_generic_action(&mut self, a: String, p: String) {
+        self.run.push(GenericAction {
+            id: self.global_id,
+            action: a,
+            payload: p,
+            comment: "".to_string(),
+            wait_for: 0,
+        });
 
         self.global_id += 1;
     }
@@ -108,7 +98,6 @@ impl Actions for ActionGroups {
     fn get_movement_duration(&self) -> u32 {
         self.move_time
     }
-
 }
 
 #[derive(Serialize, Debug)]

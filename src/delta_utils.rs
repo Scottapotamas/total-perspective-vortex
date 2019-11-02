@@ -1,5 +1,5 @@
 use crate::import_types::*;
-use std::f32::{MAX};
+use std::f32::MAX;
 
 // Calculate the 3D distance in mm between two points
 fn distance_3d(a: &BlenderPoint3, b: &BlenderPoint3) -> f32 {
@@ -11,7 +11,10 @@ fn distance_3d(a: &BlenderPoint3, b: &BlenderPoint3) -> f32 {
     distance.abs()
 }
 
-pub fn interpolate_catmull_point(p: &[BlenderPoint3], weight: f32) -> Result<BlenderPoint3, String> {
+pub fn interpolate_catmull_point(
+    p: &[BlenderPoint3],
+    weight: f32,
+) -> Result<BlenderPoint3, String> {
     if weight <= 0.0 || weight >= 1.0 {
         // Weights should be between 0.0-1.0 representing the percentage point to interpolate
         return Err("Can't interpolate catmull with input weight".to_string());
@@ -86,8 +89,7 @@ pub fn calculate_duration(points: &[BlenderPoint3], speed: f32) -> Result<f32, S
 
     let mut duration = (distance / speed) * 1000.0; // in milliseconds
 
-    if duration < 10.0 && duration != 0.0
-    {
+    if duration < 10.0 && duration != 0.0 {
         duration = 10.0;
     }
 
@@ -121,15 +123,14 @@ pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint3]) -> Vec<(
 
 // Sort the particles into a chain of next-nearest distances to reduce the traversal distance for particle systems
 // Very naiive approach - TODO solve travelling salesman problem!
-pub fn sort_particles(particles : &mut Vec<BlenderParticle>) -> Vec<BlenderParticle> {
-
+pub fn sort_particles(particles: &mut Vec<BlenderParticle>) -> Vec<BlenderParticle> {
     let mut sorted_particles = vec![];
     sorted_particles.reserve(particles.len());
 
     // Randomly pick a starting point, Non-deterministic pathing through the particle cloud is desirable
     // as it should 'fuzz' any artifacts influenced by transit moves.
     let random_start = (rand::random::<f32>() * particles.len() as f32).floor() as usize;
-    sorted_particles.push(particles.remove( random_start ));
+    sorted_particles.push(particles.remove(random_start));
 
     while !particles.is_empty() {
         let mut closest_dist = MAX;
@@ -147,11 +148,9 @@ pub fn sort_particles(particles : &mut Vec<BlenderParticle>) -> Vec<BlenderParti
 
         // Take the closest point from this search pass, and move it into the sorted vector
         if closest_index.is_some() {
-            sorted_particles.push(particles.remove(closest_index.unwrap()) );
+            sorted_particles.push(particles.remove(closest_index.unwrap()));
         }
-
     }
 
-    return sorted_particles;
+    sorted_particles
 }
-

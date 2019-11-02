@@ -24,17 +24,20 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
 
     let json_file = File::open(input_path).expect("Blender JSON file not found");
 
-    let blender_data: BlenderData = serde_json::from_reader(json_file).expect("Blender JSON Parsing Failed");
+    println!("About to parse {:?}", folder_root);
+
+    let blender_data: BlenderData =
+        serde_json::from_reader(json_file).expect("Blender JSON Parsing Failed");
 
     // Apply coordinate transforms like scaling/offsets
     // Grab and apply UV data as required
     match blender_data {
-        BlenderData::PolySpline( bp) => {
-            let mut p : BlenderPoly = bp.clone();
+        BlenderData::PolySpline(bp) => {
+            let mut p: BlenderPoly = bp.clone();
 
             p.close_loop();
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
-            p.offset_points(0.0,0.0,BLENDER_Z_OFFSET_MILLIMETERS);
+            p.offset_points(0.0, 0.0, BLENDER_Z_OFFSET_MILLIMETERS);
 
             let uv_full_path = folder_root.join(Path::new(&p.uv_path));
             p.color = match load_uv(uv_full_path.as_path()) {
@@ -43,36 +46,40 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
             };
 
             return BlenderData::PolySpline(p);
-        },
-        BlenderData::NURBSSpline( bp) => {
-            let mut p : BlenderNURBS = bp.clone();
+        }
+        BlenderData::NURBSSpline(bp) => {
+            let mut p: BlenderNURBS = bp.clone();
 
             p.close_loop();
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
-            p.offset_points(0.0,0.0,BLENDER_Z_OFFSET_MILLIMETERS);
+            p.offset_points(0.0, 0.0, BLENDER_Z_OFFSET_MILLIMETERS);
 
-            let uv_full_path = folder_root.join(Path::new(&p.uv_path ));
+            let uv_full_path = folder_root.join(Path::new(&p.uv_path));
             p.color = match load_uv(uv_full_path.as_path()) {
                 Ok(contents) => convert_uv(contents),
                 Err(_error) => generate_placeholder_uv_data(),
             };
 
             return BlenderData::NURBSSpline(p);
-        },
-        BlenderData::Particles( bp) => {
-            let mut p : BlenderParticles = bp.clone();
+        }
+        BlenderData::Particles(bp) => {
+            let mut p: BlenderParticles = bp.clone();
 
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
-            p.offset_points(0.0,0.0,BLENDER_Z_OFFSET_MILLIMETERS);
+            p.offset_points(0.0, 0.0, BLENDER_Z_OFFSET_MILLIMETERS);
 
             p.particles = sort_particles(&mut p.particles);
 
-            let rgb = Rgb::from(&(p.color_rgba.0 as f64 * 255.0, p.color_rgba.1 as f64 * 255.0, p.color_rgba.2 as f64 * 255.0));
+            let rgb = Rgb::from(&(
+                p.color_rgba.0 as f64 * 255.0,
+                p.color_rgba.1 as f64 * 255.0,
+                p.color_rgba.2 as f64 * 255.0,
+            ));
             let hsl = Hsl::from(&rgb);
             p.color = vec![hsl; 1];
 
             return BlenderData::Particles(p);
-        },
+        }
         _ => println!("Unknown blender data format???"),
     };
 

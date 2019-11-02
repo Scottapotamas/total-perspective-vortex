@@ -138,16 +138,14 @@ fn process_collection(entry: &DirEntry) -> Option<FileMetadata> {
         .map(|x| load_blender_data(&x.path()))
         .collect();
 
-    if parsed_splines.is_empty()
-    {
+    if parsed_splines.is_empty() {
         return None;
     }
 
     // Take our spline+illumination data, and generate a tool-path
     let planned_events = generate_delta_toolpath(&parsed_splines);
 
-    if planned_events.delta.is_empty()
-    {
+    if planned_events.delta.is_empty() {
         return None;
     }
 
@@ -160,8 +158,18 @@ fn process_collection(entry: &DirEntry) -> Option<FileMetadata> {
         .map(|x| x.payload.duration)
         .sum();
 
-    let first_move = planned_events.delta.first().expect("No first move").payload.id;
-    let last_move = planned_events.delta.last().expect("No last move").payload.id;
+    let first_move = planned_events
+        .delta
+        .first()
+        .expect("No first move")
+        .payload
+        .id;
+    let last_move = planned_events
+        .delta
+        .last()
+        .expect("No last move")
+        .payload
+        .id;
 
     let num_lights = planned_events.light.len() as u32;
     // Add header information
@@ -217,7 +225,7 @@ fn process_collection(entry: &DirEntry) -> Option<FileMetadata> {
 }
 
 fn pathbuf_to_string(input: PathBuf) -> String {
-    return input.to_str().unwrap().to_string();
+    input.to_str().unwrap().to_string()
 }
 
 // Takes a destination folder, the name of the collection, and the extension of the file
