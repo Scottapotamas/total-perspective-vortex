@@ -155,8 +155,19 @@ pub struct Fade {
     #[serde(rename = "type")]
     pub animation_type: LightAnimationType,
     pub id: u32,
-    pub duration: f32,
+    pub duration: u32,
     pub points: Vec<(f32, f32, f32)>,
+}
+
+impl Fade {
+    pub fn dark_for_duration( duration: u32) -> Fade {
+        Fade {
+            animation_type: LightAnimationType::ConstantOn,
+            id: 0,
+            duration,
+            points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
+        }
+    }
 }
 
 #[derive(Serialize, Debug)]

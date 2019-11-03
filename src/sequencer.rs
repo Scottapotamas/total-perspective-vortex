@@ -13,8 +13,8 @@ const POINT_DELAY_MS: u32 = 50;
 // Generate a move between A and B
 fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion> {
     if a != b {
-        // Generate transit move instead of requiring a start from home
-        if a.x == 0.0 && a.y == 0.0 && a.z == 0.0 {
+        // Generate transit move to B instead of requiring a start from home
+        if a.is_home() {
             Some(Motion {
                 id: 0,
                 reference: MotionReferenceFrame::Absolute,
@@ -46,13 +46,7 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
 fn add_starting_move(events: &mut ActionGroups, a: BlenderPoint3, b: BlenderPoint3) {
     if let Some(transit) = move_between(a, b, MOVEMENT_SPEED) {
         // Also add an equal duration lighting event so we have a unlit transit
-        events.add_light_action(Fade {
-            animation_type: LightAnimationType::LinearFade,
-            id: 0,
-            duration: transit.duration as f32,
-            points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
-        });
-
+        events.add_light_action(Fade::dark_for_duration(transit.duration));
         events.add_delta_action(transit);
     }
 }
@@ -71,7 +65,7 @@ fn add_delay(events: &mut ActionGroups, time: u32) {
     events.add_light_action(Fade {
         animation_type: LightAnimationType::LinearFade,
         id: 0,
-        duration: time as f32,
+        duration: time,
         points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
     });
 }
@@ -101,7 +95,7 @@ fn generate_visually_distinct_fade<'a>(
         events.add_light_action(Fade {
             animation_type: LightAnimationType::LinearFade,
             id: 1,
-            duration: fade_duration,
+            duration: fade_duration as u32, //todo round correctly
             points: vec![cluster_start, cluster_end],
         });
 
@@ -248,7 +242,7 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                     event_set.add_light_action(Fade {
                         animation_type: LightAnimationType::ConstantOn,
                         id: 0,
-                        duration: move_duration as f32,
+                        duration: move_duration,
                         points: p_color,
                     });
                 }
