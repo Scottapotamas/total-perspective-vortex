@@ -8,6 +8,7 @@ use colorsys::Hsl;
 
 const MOVEMENT_SPEED: f32 = 200.0;
 const CLUSTER_THRESHOLD: f64 = 300.0;
+const POINT_DELAY_MS: u32 = 50;
 
 // Generate a move between A and B
 fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion> {
@@ -16,8 +17,8 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
         if a.x == 0.0 && a.y == 0.0 && a.z == 0.0 {
             Some(Motion {
                 id: 0,
-                reference: 0,
-                motion_type: 0,
+                reference: MotionReferenceFrame::Absolute,
+                motion_type: MotionInterpolationType::PointTransit,
                 duration: 500,
                 points: vec![(b.x, b.y, b.z)],
             });
@@ -32,8 +33,8 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
 
         Some(Motion {
             id: 0,
-            reference: 0,
-            motion_type: 1,
+            reference: MotionReferenceFrame::Absolute,
+            motion_type: MotionInterpolationType::Line,
             duration: transit_duration,
             points: transit_points,
         })
@@ -46,7 +47,7 @@ fn add_starting_move(events: &mut ActionGroups, a: BlenderPoint3, b: BlenderPoin
     if let Some(transit) = move_between(a, b, MOVEMENT_SPEED) {
         // Also add an equal duration lighting event so we have a unlit transit
         events.add_light_action(Fade {
-            animation_type: 1,
+            animation_type: LightAnimationType::LinearFade,
             id: 0,
             duration: transit.duration as f32,
             points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
@@ -59,8 +60,8 @@ fn add_starting_move(events: &mut ActionGroups, a: BlenderPoint3, b: BlenderPoin
 fn add_delay(events: &mut ActionGroups, time: u32) {
     // Abuse the relative movement to move 'zero distance' over time
     events.add_delta_action(Motion {
-        motion_type: 0,
-        reference: 1,
+        motion_type: MotionInterpolationType::PointTransit,
+        reference: MotionReferenceFrame::Relative,
         id: 0,
         duration: time,
         points: vec![(0.0, 0.0, 0.0)],
@@ -68,7 +69,7 @@ fn add_delay(events: &mut ActionGroups, time: u32) {
 
     // Also add an equal duration lighting event
     events.add_light_action(Fade {
-        animation_type: 1,
+        animation_type: LightAnimationType::LinearFade,
         id: 0,
         duration: time as f32,
         points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
@@ -98,7 +99,7 @@ fn generate_visually_distinct_fade<'a>(
 
         // Add the event to the lighting events pool
         events.add_light_action(Fade {
-            animation_type: 1,
+            animation_type: LightAnimationType::LinearFade,
             id: 1,
             duration: fade_duration,
             points: vec![cluster_start, cluster_end],
@@ -139,8 +140,8 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                     last_point = BlenderPoly::get_end_point(geometry).into_bp3();
                     event_set.add_delta_action(Motion {
                         id: 0,
-                        reference: 0,
-                        motion_type: 1, // polysplines are linear moves
+                        reference: MotionReferenceFrame::Absolute,
+                        motion_type: MotionInterpolationType::Line, // polysplines are linear moves
                         duration,
                         points: geom
                             .iter()
@@ -189,8 +190,8 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                     last_point = BlenderNURBS::get_end_point(geometry).into_bp3();
                     event_set.add_delta_action(Motion {
                         id: 0,
-                        reference: 0,
-                        motion_type: 2, // BlenderNURBS are catmull-rom splines
+                        reference: MotionReferenceFrame::Absolute,
+                        motion_type: MotionInterpolationType::CatmullSpline,
                         duration: calculate_duration(&geom, MOVEMENT_SPEED).unwrap() as u32,
                         points: geom
                             .iter()
@@ -227,25 +228,25 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                     // Move to the particle's start point
                     add_starting_move(&mut event_set, last_point, particle.prev_location);
 
-                    // We want to execute a line over the length of the particle's trail
+                    // Execute a line over the length of the particle's trail
                     let p_line = [particle.prev_location, particle.location];
                     let move_duration = calculate_duration(&p_line, MOVEMENT_SPEED).unwrap() as u32;
 
                     last_point = particle.location; //retain this for use in the next loop's transit start
 
-                    add_delay(&mut event_set, 50);
+                    add_delay(&mut event_set, POINT_DELAY_MS);
 
                     event_set.add_delta_action(Motion {
                         id: 0,
-                        reference: 0,
-                        motion_type: 1, // particle trails are linear moves
+                        reference: MotionReferenceFrame::Absolute,
+                        motion_type: MotionInterpolationType::Line, // particle trails are linear moves
                         duration: move_duration,
                         points: p_line.iter().map(|p| (p.x, p.y, p.z)).collect(),
                     });
 
                     let p_color = p.color.iter().map(|c| delta_led_from_hsl(c)).collect();
                     event_set.add_light_action(Fade {
-                        animation_type: 0,
+                        animation_type: LightAnimationType::ConstantOn,
                         id: 0,
                         duration: move_duration as f32,
                         points: p_color,
