@@ -236,7 +236,7 @@ fn format_filename(destination: &Path, name: String, extension: String) -> PathB
 
     let file_name = format!("{}_{}", collection_name, extension);
     let path = Path::new(&file_name);
-    let parent_folder = destination.clone();
+    let parent_folder = destination;
 
     parent_folder.join(&path)
 }
