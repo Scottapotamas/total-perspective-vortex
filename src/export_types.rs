@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde_repr::{Serialize_repr};
 
 #[derive(Serialize, Debug)]
 pub struct DeltaEvents {
@@ -53,7 +54,7 @@ impl Actions for ActionGroups {
         m.id = self.delta.len() as u32 + 1;
 
         // Accumulate movement time (don't count transit moves)
-        if m.motion_type != 0 {
+        if m.motion_type != MotionInterpolationType::PointTransit {
             self.move_time += m.duration;
         }
 
@@ -107,11 +108,28 @@ pub struct DeltaAction {
     pub payload: Motion,
 }
 
+#[derive(Serialize_repr, PartialEq, Debug)]
+#[repr(u8)]
+pub enum MotionInterpolationType {
+    PointTransit = 0,
+    Line = 1,
+    CatmullSpline = 2,
+    BezierQuadratic = 3,
+    BezierCubic = 4,
+}
+
+#[derive(Serialize_repr, PartialEq, Debug)]
+#[repr(u8)]
+pub enum MotionReferenceFrame {
+    Absolute = 0,
+    Relative = 1,
+}
+
 #[derive(Serialize, Debug)]
 pub struct Motion {
     #[serde(rename = "type")]
-    pub motion_type: u32,
-    pub reference: u32,
+    pub motion_type: MotionInterpolationType,
+    pub reference: MotionReferenceFrame,
     pub id: u32,
     pub duration: u32,
     pub points: Vec<(f32, f32, f32)>,
@@ -125,10 +143,17 @@ pub struct LightAction {
     pub comment: String,
 }
 
+#[derive(Serialize_repr, PartialEq, Debug)]
+#[repr(u8)]
+pub enum LightAnimationType {
+    ConstantOn = 0,
+    LinearFade = 1,
+}
+
 #[derive(Serialize, Debug)]
 pub struct Fade {
     #[serde(rename = "type")]
-    pub animation_type: u32,
+    pub animation_type: LightAnimationType,
     pub id: u32,
     pub duration: f32,
     pub points: Vec<(f32, f32, f32)>,
