@@ -80,7 +80,6 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
 
             return BlenderData::Particles(p);
         }
-        _ => println!("Unknown blender data format???"),
     };
 
     // TODO work out how to put close_loop(), scale_points(), and offset_points() here once, rather than requiring type-based incantation

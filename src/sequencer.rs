@@ -179,7 +179,12 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                     .points
                     .windows(BlenderNURBS::get_recommended_window_size())
                 {
-                    let geom: [BlenderPoint3; 4] = [geometry[0].into_bp3(), geometry[1].into_bp3(), geometry[2].into_bp3(), geometry[3].into_bp3()];
+                    let geom: [BlenderPoint3; 4] = [
+                        geometry[0].into_bp3(),
+                        geometry[1].into_bp3(),
+                        geometry[2].into_bp3(),
+                        geometry[3].into_bp3(),
+                    ];
 
                     last_point = BlenderNURBS::get_end_point(geometry).into_bp3();
                     event_set.add_delta_action(Motion {

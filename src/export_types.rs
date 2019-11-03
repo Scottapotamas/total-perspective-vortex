@@ -29,8 +29,8 @@ pub struct ActionGroups {
 pub trait Actions {
     fn new() -> ActionGroups;
 
-    fn add_delta_action(&mut self, mut m: Motion);
-    fn add_light_action(&mut self, mut l: Fade);
+    fn add_delta_action(&mut self, m: Motion);
+    fn add_light_action(&mut self, l: Fade);
     fn add_generic_action(&mut self, a: String, p: String);
 
     fn get_next_global_id(&self) -> u32;
