@@ -227,6 +227,11 @@ impl BlenderTransforms for BlenderPoint3 {
         self.z += z_offset;
     }
 }
+impl BlenderPoint3 {
+    pub fn is_home(self) -> bool {
+        self.x == 0.0 && self.y == 0.0 && self.z == 0.0
+    }
+}
 
 #[derive(Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct BlenderPoint4 {
@@ -259,5 +264,9 @@ impl BlenderPoint4 {
             y: self.y,
             z: self.z,
         }
+    }
+
+    pub fn is_home(self) -> bool {
+        self.x != 0.0 && self.y != 0.0 && self.z != 0.0
     }
 }
