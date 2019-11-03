@@ -8,7 +8,9 @@ use colorsys::Hsl;
 
 const MOVEMENT_SPEED: f32 = 200.0;
 const CLUSTER_THRESHOLD: f64 = 300.0;
-const POINT_DELAY_MS: u32 = 50;
+const POINT_DELAY_MS: u32 = 10;
+
+const TRANSIT_SHAPING_FACTOR: f32 = 0.01; //between 0 and 1
 
 // Generate a move between A and B
 fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion> {
@@ -23,19 +25,25 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
                 points: vec![(b.x, b.y, b.z)],
             })
         } else {
-            let transit_points: Vec<(f32, f32, f32)> = vec![a, b]
+            let duration = calculate_duration(&[a, b], speed).unwrap() as u32;
+
+            // Create a bezier curve with control points ON the line between a and b.
+            // Control points near the start/end points will create a non-constant velocity line
+            // Provides a ease-in-out velocity profile, rather than the constant velocity achieved with a line
+            let control_a = interpolate_line_point(&a, &b, TRANSIT_SHAPING_FACTOR).unwrap();
+            let control_b = interpolate_line_point(&b, &a, TRANSIT_SHAPING_FACTOR).unwrap();
+
+            let points: Vec<(f32, f32, f32)> = vec![a, control_a, control_b, b]
                 .iter()
                 .map(|bpoint| (bpoint.x, bpoint.y, bpoint.z))
                 .collect();
 
-            let transit_duration = calculate_duration(&[a, b], speed).unwrap() as u32;
-
             Some(Motion {
                 id: 0,
                 reference: MotionReferenceFrame::Absolute,
-                motion_type: MotionInterpolationType::Line,
-                duration: transit_duration,
-                points: transit_points,
+                motion_type: MotionInterpolationType::BezierCubic,
+                duration,
+                points,
             })
         }
     } else {
@@ -216,7 +224,6 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                 }
             }
             BlenderData::Particles(p) => {
-                println!("Frame particle count: {}", p.particles.len());
                 // Create a movement for each particle between last and current locations with the specified 'global' colour
                 for particle in &p.particles {
                     // Move to the particle's start point

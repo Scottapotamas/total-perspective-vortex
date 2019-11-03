@@ -1,6 +1,24 @@
 use crate::import_types::*;
 use std::f32::MAX;
 
+// Find a point partially between two points
+pub fn interpolate_line_point(
+    a: &BlenderPoint3,
+    b: &BlenderPoint3,
+    weight: f32,
+) -> Result<BlenderPoint3, String> {
+    if weight <= 0.0 || weight >= 1.0 {
+        // Weights should be between 0.0-1.0 representing the percentage point to interpolate
+        return Err("Can't interpolate point from line with input weight".to_string());
+    }
+
+    Ok(BlenderPoint3 {
+        x: a.x + ((b.x - a.x) * weight),
+        y: a.y + ((b.y - a.y) * weight),
+        z: a.z + ((b.z - a.z) * weight),
+    })
+}
+
 // Calculate the 3D distance in mm between two points
 fn distance_3d(a: &BlenderPoint3, b: &BlenderPoint3) -> f32 {
     let dx = a.x - b.x;
@@ -89,7 +107,7 @@ pub fn calculate_duration(points: &[BlenderPoint3], speed: f32) -> Result<f32, S
 
     let mut duration = (distance / speed) * 1000.0; // in milliseconds
 
-    if duration < 10.0 && duration != 0.0 {
+    if duration < 10.0 {
         duration = 10.0;
     }
 
