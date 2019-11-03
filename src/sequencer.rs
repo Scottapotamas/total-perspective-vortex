@@ -21,23 +21,23 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
                 motion_type: MotionInterpolationType::PointTransit,
                 duration: 500,
                 points: vec![(b.x, b.y, b.z)],
-            });
+            })
+        } else {
+            let transit_points: Vec<(f32, f32, f32)> = vec![a, b]
+                .iter()
+                .map(|bpoint| (bpoint.x, bpoint.y, bpoint.z))
+                .collect();
+
+            let transit_duration = calculate_duration(&[a, b], speed).unwrap() as u32;
+
+            Some(Motion {
+                id: 0,
+                reference: MotionReferenceFrame::Absolute,
+                motion_type: MotionInterpolationType::Line,
+                duration: transit_duration,
+                points: transit_points,
+            })
         }
-
-        let transit_points: Vec<(f32, f32, f32)> = vec![a, b]
-            .iter()
-            .map(|bpoint| (bpoint.x, bpoint.y, bpoint.z))
-            .collect();
-
-        let transit_duration = calculate_duration(&[a, b], speed).unwrap() as u32;
-
-        Some(Motion {
-            id: 0,
-            reference: MotionReferenceFrame::Absolute,
-            motion_type: MotionInterpolationType::Line,
-            duration: transit_duration,
-            points: transit_points,
-        })
     } else {
         None
     }
