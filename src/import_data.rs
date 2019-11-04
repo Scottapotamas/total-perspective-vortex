@@ -71,9 +71,9 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
             p.particles = sort_particles(&mut p.particles);
 
             let rgb = Rgb::from(&(
-                p.color_rgba.0 as f64 * 255.0,
-                p.color_rgba.1 as f64 * 255.0,
-                p.color_rgba.2 as f64 * 255.0,
+                f64::from(p.color_rgba.0) * 255.0,
+                f64::from(p.color_rgba.1) * 255.0,
+                f64::from(p.color_rgba.2) * 255.0,
             ));
             let hsl = Hsl::from(&rgb);
             p.color = vec![hsl; 1];
@@ -83,8 +83,6 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
     };
 
     // TODO work out how to put close_loop(), scale_points(), and offset_points() here once, rather than requiring type-based incantation
-
-    blender_data
 }
 
 fn load_uv(input_path: &Path) -> Result<DynamicImage, image::ImageError> {
@@ -101,13 +99,12 @@ fn convert_uv(image: DynamicImage) -> Vec<Hsl> {
 
     let hue_list: Vec<Hsl> = first_row
         .pixels()
-        .into_iter()
         .map(|pixel| {
             Rgb::from((
-                pixel.2[0] as f64,
-                pixel.2[1] as f64,
-                pixel.2[2] as f64,
-                pixel.2[3] as f64,
+              f64::from(pixel.2[0]),
+              f64::from(pixel.2[1]),
+              f64::from(pixel.2[2]),
+              f64::from(pixel.2[3]),
             ))
             .as_ref()
             .into()

@@ -165,8 +165,8 @@ pub fn sort_particles(particles: &mut Vec<BlenderParticle>) -> Vec<BlenderPartic
         }
 
         // Take the closest point from this search pass, and move it into the sorted vector
-        if closest_index.is_some() {
-            sorted_particles.push(particles.remove(closest_index.unwrap()));
+        if let Some(sorted_point_index) = closest_index {
+            sorted_particles.push(particles.remove(sorted_point_index));
         }
     }
 
