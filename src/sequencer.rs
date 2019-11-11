@@ -53,8 +53,6 @@ fn move_between(a: BlenderPoint3, b: BlenderPoint3, speed: f32) -> Option<Motion
 
 fn add_starting_move(events: &mut ActionGroups, a: BlenderPoint3, b: BlenderPoint3) {
     if let Some(transit) = move_between(a, b, MOVEMENT_SPEED) {
-        // Also add an equal duration lighting event so we have a unlit transit
-        events.add_light_action(Fade::dark_for_duration(transit.duration));
         events.add_delta_action(transit);
     }
 }
@@ -67,14 +65,6 @@ fn add_delay(events: &mut ActionGroups, time: u32) {
         id: 0,
         duration: time,
         points: vec![(0.0, 0.0, 0.0)],
-    });
-
-    // Also add an equal duration lighting event
-    events.add_light_action(Fade {
-        animation_type: LightAnimationType::LinearFade,
-        id: 0,
-        duration: time,
-        points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
     });
 }
 
@@ -130,6 +120,7 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
             BlenderData::PolySpline(spline) => {
                 // Generate a move from the end of the last spline to the start of the next spline
                 add_starting_move(&mut event_set, last_point, spline.points[0].into_bp3());
+                event_set.reset_barrier_id();
 
                 // Polysplines are a chain of lines, a line consists of a pair of BlenderPoint co-ordinates
                 for geometry in spline
@@ -137,9 +128,9 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                     .windows(BlenderPoly::get_recommended_window_size())
                 {
                     let geom: [BlenderPoint3; 2] = [geometry[0].into_bp3(), geometry[1].into_bp3()];
-
                     let duration = calculate_duration(&geom, MOVEMENT_SPEED).unwrap() as u32;
                     last_point = BlenderPoly::get_end_point(geometry).into_bp3();
+
                     event_set.add_delta_action(Motion {
                         id: 0,
                         reference: MotionReferenceFrame::Absolute,
@@ -176,6 +167,7 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
             BlenderData::NURBSSpline(spline) => {
                 // Generate a move from the end of the last spline to the start of the next spline
                 add_starting_move(&mut event_set, last_point, spline.points[0].into_bp3());
+                event_set.reset_barrier_id();
 
                 // NURBSSplines are a list of points representing a catmull-rom spline. Generate movements representing the minimal spline segments.
                 for geometry in spline
@@ -236,6 +228,8 @@ pub fn generate_delta_toolpath(input: &[BlenderData]) -> ActionGroups {
                     last_point = particle.location; //retain this for use in the next loop's transit start
 
                     add_delay(&mut event_set, POINT_DELAY_MS);
+
+                    event_set.reset_barrier_id();
 
                     event_set.add_delta_action(Motion {
                         id: 0,
