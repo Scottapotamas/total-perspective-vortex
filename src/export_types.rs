@@ -1,5 +1,5 @@
 use serde::Serialize;
-use serde_repr::{Serialize_repr};
+use serde_repr::Serialize_repr;
 
 #[derive(Serialize, Debug)]
 pub struct DeltaEvents {
@@ -25,6 +25,12 @@ pub struct ActionGroups {
 
     #[serde(skip_serializing)]
     move_time: u32,
+
+    #[serde(skip_serializing)]
+    move_barrier_id: u32,
+
+    #[serde(skip_serializing)]
+    move_barrier_reset: bool,
 }
 
 pub trait Actions {
@@ -36,6 +42,7 @@ pub trait Actions {
 
     fn get_next_global_id(&self) -> u32;
     fn get_movement_duration(&self) -> u32;
+    fn reset_barrier_id(&mut self);
 }
 
 impl Actions for ActionGroups {
@@ -46,6 +53,8 @@ impl Actions for ActionGroups {
             run: vec![],
             global_id: 0,
             move_time: 0,
+            move_barrier_id: 0,
+            move_barrier_reset: true,
         }
     }
 
@@ -53,8 +62,15 @@ impl Actions for ActionGroups {
         // Set the ID for the move being added to the set
         m.id = self.delta.len() as u32 + 1;
 
+        if self.move_barrier_reset {
+            self.move_barrier_id = m.id;
+            self.move_barrier_reset = false;
+        }
+
         // Accumulate movement time (don't count transit moves)
-        if m.motion_type != MotionInterpolationType::PointTransit {
+        if m.motion_type != MotionInterpolationType::PointTransit
+            && m.motion_type != MotionInterpolationType::BezierCubic
+        {
             self.move_time += m.duration;
         }
 
@@ -68,7 +84,7 @@ impl Actions for ActionGroups {
     }
 
     fn add_light_action(&mut self, mut l: Fade) {
-        l.id = self.light.len() as u32 + 1;
+        l.id = self.move_barrier_id;
 
         self.light.push(LightAction {
             id: self.global_id,
@@ -98,6 +114,11 @@ impl Actions for ActionGroups {
 
     fn get_movement_duration(&self) -> u32 {
         self.move_time
+    }
+
+    fn reset_barrier_id(&mut self) {
+        self.move_barrier_reset = true;
+        self.move_time = 0;
     }
 }
 
@@ -160,12 +181,12 @@ pub struct Fade {
 }
 
 impl Fade {
-    pub fn dark_for_duration( duration: u32) -> Fade {
+    pub fn dark_for_duration(duration: u32) -> Fade {
         Fade {
             animation_type: LightAnimationType::ConstantOn,
             id: 0,
             duration,
-            points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
+            points: vec![(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)],
         }
     }
 }
