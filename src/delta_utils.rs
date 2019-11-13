@@ -19,6 +19,15 @@ pub fn interpolate_line_point(
     })
 }
 
+// Calculate the 2D distance in mm between two points
+fn distance_2d(a: &BlenderPoint2, b: &BlenderPoint2) -> f32 {
+    let dx = a.x - b.x;
+    let dy = a.y - b.y;
+    let distance = ((dx * dx) + (dy * dy)).sqrt();
+
+    distance.abs()
+}
+
 // Calculate the 3D distance in mm between two points
 fn distance_3d(a: &BlenderPoint3, b: &BlenderPoint3) -> f32 {
     let dx = a.x - b.x;
@@ -137,6 +146,20 @@ pub fn vertex_from_spline(spline_type: u32, geometry: &[BlenderPoint3]) -> Vec<(
     }
 
     points_list
+}
+
+fn is_point_in_circle(point: &BlenderPoint2, circle_center: &BlenderPoint2, radius: f32) -> bool {
+    distance_2d(point, circle_center) <= radius
+}
+
+pub fn is_point_legal(point: &BlenderPoint3) -> bool {
+    let cylinder_offset = BlenderPoint2 { x: 0.0, y: 0.0 };
+    let cylinder_ends: (f32, f32) = (0.0, 200.0);
+    let cylinder_radius: f32 = 200.0;
+
+    is_point_in_circle(&point.into_bp2_xy(), &cylinder_offset, cylinder_radius)
+        && point.z > cylinder_ends.0
+        && point.z < cylinder_ends.1
 }
 
 // Sort the particles into a chain of next-nearest distances to reduce the traversal distance for particle systems

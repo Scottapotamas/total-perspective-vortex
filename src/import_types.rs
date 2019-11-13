@@ -208,6 +208,12 @@ impl BlenderTransforms for BlenderParticle {
 }
 
 #[derive(Deserialize, Debug, Copy, Clone, PartialEq)]
+pub struct BlenderPoint2 {
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct BlenderPoint3 {
     pub x: f32,
     pub y: f32,
@@ -228,6 +234,12 @@ impl BlenderTransforms for BlenderPoint3 {
     }
 }
 impl BlenderPoint3 {
+    pub fn into_bp2_xy(self) -> BlenderPoint2 {
+        BlenderPoint2 {
+            x: self.x,
+            y: self.y,
+        }
+    }
     pub fn is_home(self) -> bool {
         self.x == 0.0 && self.y == 0.0 && self.z == 0.0
     }

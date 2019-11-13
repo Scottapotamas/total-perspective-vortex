@@ -68,6 +68,10 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
             p.scale_points(BLENDER_TO_MILLIMETERS_SCALE_FACTOR);
             p.offset_points(0.0, 0.0, BLENDER_Z_OFFSET_MILLIMETERS);
 
+            // Remove particles outside the workspace. Particles with a trail in legal space are retained
+            p.particles
+                .retain(|x| is_point_legal(&x.location) || is_point_legal(&x.prev_location));
+
             p.particles = sort_particles(&mut p.particles);
 
             let rgb = Rgb::from(&(
@@ -101,10 +105,10 @@ fn convert_uv(image: DynamicImage) -> Vec<Hsl> {
         .pixels()
         .map(|pixel| {
             Rgb::from((
-              f64::from(pixel.2[0]),
-              f64::from(pixel.2[1]),
-              f64::from(pixel.2[2]),
-              f64::from(pixel.2[3]),
+                f64::from(pixel.2[0]),
+                f64::from(pixel.2[1]),
+                f64::from(pixel.2[2]),
+                f64::from(pixel.2[3]),
             ))
             .as_ref()
             .into()
