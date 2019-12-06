@@ -72,7 +72,10 @@ pub fn load_blender_data(input_path: &Path) -> BlenderData {
             p.particles
                 .retain(|x| is_point_legal(&x.location) || is_point_legal(&x.prev_location));
 
-            p.particles = sort_particles(&mut p.particles);
+            if !p.particles.is_empty()
+            {
+                p.particles = sort_particles(&mut p.particles);
+            }
 
             let rgb = Rgb::from(&(
                 f64::from(p.color_rgba.0) * 255.0,
